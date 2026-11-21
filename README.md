@@ -33,7 +33,11 @@ npm run dev
 - 라우트: 보호자 `/g/home·manual·care·my`, 돌봄 선생님 `/c/home·manual·records·my`, 센터 관리자 `/c/center-admin`. 로그인하지 않았거나 역할이 다르면 `/login`·자기 홈으로 이동합니다(`access.js`).
 - B·C·D는 `apps/web/public/a/screens.js`에서 자기 경로 한 줄만 교체해 화면을 끼웁니다. 아직 없는 화면은 자리표시 카드로 보입니다.
 - 재사용: `a.css`(디자인 토큰·버튼·카드·탭), `icons.js`(선 아이콘), `access.js`(역할별 탭·접근 규칙), `api.js`(`getSession()` 등), `assets/minjun.png`(시연 캐릭터).
-- 한계: 설명서·아이 맡기기·돌봄기록은 자리표시이고, D의 시연 화면(`/care`)은 아직 탭에 연결하지 않았습니다.
+- 한계: 아이 맡기기·돌봄기록은 자리표시이고, D의 시연 화면(`/care`)은 아직 탭에 연결하지 않았습니다.
+
+## 보호자 질문지 (B)
+
+보호자로 로그인한 뒤 설명서 탭에서 Supabase의 활성 질문과 선택지를 불러옵니다. 답변은 로그인 세션의 `care_recipient_id`로 저장하며 재진입 시 복구합니다. 질문 조회와 답변 API, 데모용 DB 정책의 범위는 [`docs/questionnaire-api.md`](docs/questionnaire-api.md)에서 확인합니다.
 
 ## 검증
 

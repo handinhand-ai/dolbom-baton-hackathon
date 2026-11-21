@@ -4,6 +4,7 @@
 import { h } from './dom.js';
 import { renderLogin } from './login.js';
 import { renderMyPage } from './my.js';
+import { renderQuestionnaire } from '../b/questionnaire.js';
 
 const CHARACTER = '/a/assets/minjun.png';
 
@@ -47,7 +48,7 @@ function caregiverHome(view, { session }) {
 export const screens = new Map([
   ['/login', renderLogin],
   ['/g/home', guardianHome],
-  ['/g/manual', placeholder('설명서', 'B')],
+  ['/g/manual', renderQuestionnaire],
   ['/g/care', placeholder('아이 맡기기', 'D', '아이 맡기기 화면을 이 탭에 연결할 예정이에요.', D_SCREEN)],
   ['/g/my', renderMyPage],
   ['/c/home', caregiverHome],

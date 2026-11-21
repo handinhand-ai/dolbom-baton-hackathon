@@ -28,15 +28,15 @@ test('health returns only the documented public status fields', async (context) 
   }
 });
 
-test('the Korean web shell and its linked assets are served', async (context) => {
+test('the Korean authenticated app shell and its linked assets are served', async (context) => {
   const base = await startServer(context);
   const page = await fetch(base);
   assert.equal(page.status, 200);
   const html = await page.text();
   assert.match(html, /<html lang="ko">/);
-  assert.match(html, /돌봄 바통/);
+  assert.match(html, /돌봄바통/);
   const paths = [...html.matchAll(/(?:src|href)="(\/[^\"]+)"/g)].map((match) => match[1]);
-  assert.equal(paths.length, 2);
+  assert.ok(paths.length >= 2);
   for (const path of paths) {
     const asset = await fetch(`${base}${path}`);
     assert.equal(asset.status, 200);

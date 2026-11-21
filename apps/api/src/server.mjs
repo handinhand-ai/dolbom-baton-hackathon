@@ -4,10 +4,11 @@ import { handleCareRequest } from './care/routes.mjs';
 import { createCareStore } from './care/store.mjs';
 import { createAuthStore } from './auth/auth-store.mjs';
 import { createAuthHandler, readSessionToken } from './auth/routes.mjs';
+import { handleQuestionnaireAnswerRequest } from './questionnaire/routes.mjs';
 
 const publicRoot = new URL('../../web/public/', import.meta.url);
 const assets = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
+  ['/', ['a/index.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   // D: 아이 맡기기 · 센터 화면(시연용). A의 탭 틀이 병합되면 탭 자리에 연결합니다.
@@ -15,6 +16,8 @@ const assets = new Map([
   ['/care.css', ['care.css', 'text/css; charset=utf-8']],
   ['/care.js', ['care.js', 'text/javascript; charset=utf-8']],
   ['/a/', ['a/index.html', 'text/html; charset=utf-8']],
+  ['/b/questionnaire.js', ['b/questionnaire.js', 'text/javascript; charset=utf-8']],
+  ['/b/questionnaire.css', ['b/questionnaire.css', 'text/css; charset=utf-8']],
 ]);
 const uiTypes = {
   js: 'text/javascript; charset=utf-8',
@@ -99,6 +102,17 @@ export function createApp({
     if (await handleAuthRequest({ request, response, url })) return;
     const sessionUserId = authStore.userIdFor(readSessionToken(request));
     if (await handleCareRequest({ request, response, url, store: careStore, sendJson, sessionUserId })) return;
+    if (await handleQuestionnaireAnswerRequest({
+      request,
+      response,
+      url,
+      sessionUserId,
+      careStore,
+      fetchImpl,
+      supabaseUrl,
+      supabaseAnonKey,
+      sendJson,
+    })) return;
 
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');
