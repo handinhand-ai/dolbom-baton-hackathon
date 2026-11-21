@@ -3,6 +3,8 @@
 // render(view, { session })는 view 안에 화면을 그립니다. 탭 틀·로그인 확인은 shell.js가 맡습니다.
 import { h } from './dom.js';
 import { renderLogin } from './login.js';
+import { renderSignup } from './signup.js';
+import { renderProfile, renderPhoto, renderAvatar } from './onboarding-screens.js';
 import { renderMyPage } from './my.js';
 import { renderQuestionnaire } from '../b/questionnaire.js';
 import {
@@ -52,6 +54,10 @@ function caregiverHome(view, { session }) {
 
 export const screens = new Map([
   ['/login', renderLogin],
+  ['/signup', renderSignup],
+  ['/g/onboarding/profile', renderProfile],
+  ['/g/onboarding/photo', renderPhoto],
+  ['/g/onboarding/avatar', renderAvatar],
   ['/g/home', renderGuardianHome],
   ['/g/voice', renderVoicePending],
   ['/g/manual', renderQuestionnaire],

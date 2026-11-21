@@ -1,6 +1,8 @@
 // UI completion on top of the A+B integration branch.
 // All care requests use the existing authenticated D API; no fabricated availability or AI results.
 import { h } from './dom.js';
+import { createOnboardingStore } from './onboarding.js';
+import { characterUrl } from './onboarding-screens.js';
 
 const badge = (text, tone = '') => h('span', { class: `f-chip ${tone}`, text });
 const button = (label, action, className = '') => h('button', { type: 'button', class: `f-button ${className}`, text: label, onclick: action });
@@ -58,11 +60,20 @@ export async function renderGuardianHome(view, { session, navigate }) {
   view.append(h('header', { class: 'f-brand' }, h('span', { text: '돌봄바통' })),
     h('h1', { tabindex: '-1', class: 'f-greeting', text: '큰소리를 힘들어하고,\n그림 카드로 마음을 표현해요' }));
   const child = session.care_recipient;
+  const onboarding = createOnboardingStore(globalThis.localStorage, session.user_id).load();
+  const recipientName = onboarding.receiver?.name || child?.name || '돌봄 대상 등록이 필요해요';
+  const recipientFacts = onboarding.receiver
+    ? [onboarding.receiver.age, onboarding.receiver.sex].filter(Boolean).join(' · ')
+    : null;
+  let portrait = '/a/assets/figma-mascot.png';
+  if (onboarding.avatar?.color) {
+    try { portrait = await characterUrl(onboarding.avatar.color); } catch { /* Use the bundled Figma mascot. */ }
+  }
   view.append(
     h('section', { class: 'f-hero' },
-      h('img', { src: '/a/assets/figma-mascot.png', width: '153', height: '183', alt: '주황색 옷과 빨간 헤드폰을 쓴 돌봄바통 캐릭터' }),
-      h('h2', { text: child?.name || '돌봄 대상 등록이 필요해요' }),
-      caption(child ? '보호자가 확인한 기록을 돌봄에 연결해요' : '아이 정보를 먼저 확인해 주세요')),
+      h('img', { src: portrait, width: '153', height: '183', alt: '주황색 옷과 빨간 헤드폰을 쓴 돌봄바통 캐릭터' }),
+      h('h2', { text: recipientName }),
+      caption(recipientFacts || (child ? '보호자가 확인한 기록을 돌봄에 연결해요' : '아이 정보를 먼저 확인해 주세요'))),
     h('section', { class: 'f-quick' },
       anchor('아이 설명서 작성·수정', '/g/manual', 'f-secondary'),
       anchor('아이 맡기기', '/g/care')),

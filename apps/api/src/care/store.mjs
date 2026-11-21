@@ -17,6 +17,8 @@ export function createCareStore({ now = () => new Date() } = {}) {
   let data = createDemoData();
   let applications = [];
   let assignments = [];
+  // A의 회원가입으로 만든 사용자·돌봄 대상. 시연 데이터 초기화(reset)에도 남깁니다(계정은 시연 데이터가 아님).
+  const registered = { users: [], recipients: [] };
 
   const findUser = (userId) => data.users.find((user) => user.user_id === userId);
   const findCenter = (centerId) => data.centers.find((center) => center.id === centerId);
@@ -56,8 +58,28 @@ export function createCareStore({ now = () => new Date() } = {}) {
   }
 
   return {
-    users: () => data.users.map(({ user_id, role, display_name, center_id }) => ({ user_id, role, display_name, center_id: center_id ?? null })),
+    // 공개 시연 사용자 목록에는 회원가입으로 만든 계정을 넣지 않습니다.
+    users: () => data.users.filter((user) => !user.registered).map(({ user_id, role, display_name, center_id }) => ({ user_id, role, display_name, center_id: center_id ?? null })),
     getUser: findUser,
+
+    // A 회원가입 연동: 가입한 사용자를 D의 역할 데이터에 등록합니다. 센터·종사자 구분은 호출 쪽이 검증해 넘깁니다.
+    registerUser(user) {
+      const entry = { ...user, registered: true };
+      registered.users.push(entry);
+      data.users.push(entry);
+    },
+    // 보호자의 돌봄 대상을 만들거나 이름을 바꿉니다(보호자당 1명). 이름 검증은 호출 쪽 책임입니다.
+    upsertRecipient(guardianUserId, name) {
+      let recipient = registered.recipients.find((item) => item.guardian_user_id === guardianUserId);
+      if (!recipient) {
+        recipient = { id: randomUUID(), guardian_user_id: guardianUserId, name };
+        registered.recipients.push(recipient);
+        data.care_recipients.push(recipient);
+      } else {
+        recipient.name = name;
+      }
+      return { id: recipient.id, name: recipient.name };
+    },
     listCenters: () => data.centers.map((center) => ({ ...center })),
 
     // B의 getShareableSummary 자리(합성). 보호자 본인 대상만 조회합니다.
@@ -229,6 +251,8 @@ export function createCareStore({ now = () => new Date() } = {}) {
       data = createDemoData();
       applications = [];
       assignments = [];
+      data.users.push(...registered.users);
+      data.care_recipients.push(...registered.recipients);
     },
   };
 }

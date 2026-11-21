@@ -1,4 +1,5 @@
-import { ROLES, SESSION_TTL_MS } from './auth-store.mjs';
+import { DEMO_IDS } from '../care/demo-data.mjs';
+import { ROLES, SESSION_TTL_MS, SignupError } from './auth-store.mjs';
 
 // /api/auth/* 요청 처리. 처리했으면 true, 담당 경로가 아니면 false를 돌려줍니다.
 // 응답은 D와 같은 형식입니다: 성공 { data }, 실패 { error }.
@@ -7,6 +8,7 @@ const COOKIE = 'baton_session';
 const MAX_BODY_BYTES = 2048;
 const MAX_FAILED_LOGINS = 10;
 const FAILED_WINDOW_MS = 60_000;
+const MAX_SIGNUPS = 10;
 
 class AuthError extends Error {
   constructor(status, message) {
@@ -78,6 +80,7 @@ export function buildSession(user, careStore) {
 
 export function createAuthHandler({ authStore, careStore, sendJson }) {
   const failures = new Map();
+  const signups = new Map();
 
   function currentUser(request) {
     const userId = authStore.userIdFor(readSessionToken(request));
@@ -125,6 +128,38 @@ export function createAuthHandler({ authStore, careStore, sendJson }) {
       response.setHeader('Set-Cookie', cookieHeader(request, token, SESSION_TTL_MS / 1000));
       return { data: buildSession(careStore.getUser(userId), careStore) };
     }],
+    // 회원가입: 계정을 만들고 바로 로그인 상태(쿠키)로 만듭니다. 입력 오류 400(+field), 이미 가입 409, 너무 잦은 시도 429.
+    ['POST', '/api/auth/signup', async ({ request, response }) => {
+      const ip = request.socket.remoteAddress ?? 'unknown';
+      const recent = (signups.get(ip) ?? []).filter((time) => Date.now() - time < FAILED_WINDOW_MS);
+      signups.set(ip, recent);
+      if (recent.length >= MAX_SIGNUPS) throw new AuthError(429, '시도가 너무 많아요. 잠시 후 다시 시도해 주세요.');
+      const body = await readJson(request);
+      let userId;
+      try {
+        userId = authStore.signUp(body);
+      } catch (error) {
+        // 계정 생성까지 간 시도(이미 가입 409 포함)만 횟수에 넣습니다. 입력 오류(400)는 비용이 작아 세지 않습니다.
+        if (error instanceof SignupError && error.status === 409) recent.push(Date.now());
+        throw error;
+      }
+      recent.push(Date.now());
+      const token = authStore.createSession(userId);
+      response.setHeader('Set-Cookie', cookieHeader(request, token, SESSION_TTL_MS / 1000));
+      return [201, { data: buildSession(careStore.getUser(userId), careStore) }];
+    }],
+    // 가입한 보호자의 돌봄 대상 이름을 저장합니다(온보딩 1/4). 이 값이 있어야 질문지·아이 맡기기가 대상을 찾습니다.
+    ['POST', '/api/auth/recipient', async ({ request }) => {
+      const user = currentUser(request);
+      if (!user) throw new AuthError(401, '로그인이 필요해요.');
+      if (user.role !== 'guardian') throw new AuthError(403, '보호자만 돌봄 대상을 등록할 수 있어요.');
+      const body = await readJson(request);
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      if (!name || name.length > 20) throw new AuthError(400, '이름은 1~20자로 입력해 주세요.');
+      if (user.user_id === DEMO_IDS.guardian) throw new AuthError(403, '시연 계정의 돌봄 대상은 바꿀 수 없어요.');
+      careStore.upsertRecipient(user.user_id, name);
+      return { data: buildSession(user, careStore) };
+    }],
     ['POST', '/api/auth/logout', ({ request, response }) => {
       const token = readSessionToken(request);
       if (token) authStore.destroySession(token);
@@ -149,9 +184,11 @@ export function createAuthHandler({ authStore, careStore, sendJson }) {
     try {
       if (request.method === 'POST' && !sameOrigin(request)) throw new AuthError(403, '같은 사이트에서 보낸 요청만 받아요.');
       const result = await route[2]({ request, response, url });
-      sendJson(response, 200, result);
+      const [status, body] = Array.isArray(result) ? result : [200, result];
+      sendJson(response, status, body);
     } catch (error) {
-      if (error instanceof AuthError) sendJson(response, error.status, { error: error.message });
+      if (error instanceof SignupError) sendJson(response, error.status, { error: error.message, ...(error.field ? { field: error.field } : {}) });
+      else if (error instanceof AuthError) sendJson(response, error.status, { error: error.message });
       else sendJson(response, 500, { error: '요청을 처리하지 못했어요.' });
     }
     return true;

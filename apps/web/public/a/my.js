@@ -1,6 +1,7 @@
 // 16 마이페이지(P1): 이름·역할·소속, 로그아웃, 시연 데이터 초기화.
 import { ROLE_LABEL } from './access.js';
 import { h } from './dom.js';
+import { createOnboardingStore } from './onboarding.js';
 import { logout, resetDemo } from './api.js';
 
 export function renderMyPage(view, { session, navigate }) {
@@ -18,6 +19,8 @@ export function renderMyPage(view, { session, navigate }) {
     confirmButton.disabled = true;
     try {
       await resetDemo();
+      // 이 기기에 저장한 온보딩 입력(기본 정보·사진·캐릭터)도 지웁니다. 다음에 홈으로 가면 온보딩이 다시 시작돼요.
+      createOnboardingStore(globalThis.localStorage, session.user_id).clear();
       status.textContent = '시연 데이터를 처음 상태로 되돌렸어요.';
       confirmRow.hidden = true;
     } catch (error) {

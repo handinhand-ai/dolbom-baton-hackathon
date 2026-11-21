@@ -23,7 +23,7 @@ export const TABS = {
 
 // 하위 경로(예: /g/care/new)도 같은 규칙을 따릅니다.
 export function allowedRoles(path) {
-  if (path === '/login') return 'public';
+  if (path === '/login' || path === '/signup') return 'public';
   if (path === '/c/center-admin') return ['center_admin', 'caregiver'];
   if (path.startsWith('/g/')) return ['guardian'];
   if (path.startsWith('/c/')) return ['caregiver'];
@@ -45,6 +45,20 @@ export function resolveRoute(session, path) {
   }
   if (!rule || !rule.includes(session.role)) return { action: 'redirect', to: HOME[session.role] };
   return { action: 'render' };
+}
+
+// 보호자 온보딩: 기본 정보(1/4) → 증명사진(2/4) → 캐릭터(3/4) → 처음 질문지(4/4, B의 /g/manual).
+export const ONBOARDING_STEPS = Object.freeze(['/g/onboarding/profile', '/g/onboarding/photo', '/g/onboarding/avatar']);
+
+export function isOnboardingPath(path) {
+  return path.startsWith('/g/onboarding/');
+}
+
+// 회원가입을 막 마친 보호자(signupPending)는 온보딩을 끝낼 때까지 온보딩 첫 화면으로 보냅니다.
+// 기존 계정으로 로그인하는 흐름은 온보딩을 거치지 않습니다. 온보딩을 마친 뒤에는 온보딩 화면도 다시 열 수 있습니다(정보 고치기).
+export function resolveOnboarding(session, path, signupPending) {
+  if (session?.role !== 'guardian' || !signupPending || isOnboardingPath(path)) return null;
+  return { action: 'redirect', to: ONBOARDING_STEPS[0] };
 }
 
 // 로그인 뒤 돌아갈 주소. 이 사용자가 열 수 있는 앱 안의 경로일 때만 씁니다.

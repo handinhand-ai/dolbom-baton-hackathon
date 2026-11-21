@@ -12,24 +12,30 @@ const ROLE_INFO = {
 export async function renderLogin(view, { query, navigate }) {
   // 같은 역할 계정이 여러 개(센터별)면 첫 계정만 보여 줍니다.
   const accounts = (await listDemoAccounts()).filter((account, index, all) => all.findIndex((item) => item.role === account.role) === index);
-  const username = h('input', { id: 'username', name: 'username', autocomplete: 'username', autocapitalize: 'none', placeholder: '아이디', required: true });
+  const username = h('input', { id: 'username', name: 'username', autocomplete: 'username', autocapitalize: 'none', placeholder: '010-0000-0000', required: true });
   const password = h('input', { id: 'password', name: 'password', type: 'password', autocomplete: 'current-password', placeholder: '비밀번호', required: true });
   const message = h('p', { class: 'notice error', role: 'alert', hidden: true });
   const button = h('button', { type: 'submit' });
   const roleButtons = new Map();
   let selected = null;
 
+  let lastDemo = null;
   function choose(account) {
     selected = account;
-    username.value = account.username;
-    password.value = account.password;
+    // 시연 계정 값은 칸이 비었거나 방금 채운 시연 값 그대로일 때만 채웁니다(직접 입력한 전화번호·비밀번호는 덮어쓰지 않습니다).
+    const untouched = (!username.value && !password.value) || (lastDemo && username.value === lastDemo.username && password.value === lastDemo.password);
+    if (untouched) {
+      username.value = account.username;
+      password.value = account.password;
+      lastDemo = account;
+    }
     for (const [role, node] of roleButtons) node.setAttribute('aria-pressed', String(role === account.role));
     button.textContent = `${ROLE_LABEL[account.role]}로 로그인`;
     message.hidden = true;
   }
 
   const form = h('form', { novalidate: true },
-    h('div', { class: 'field' }, h('label', { for: 'username', text: '아이디' }), username),
+    h('div', { class: 'field' }, h('label', { for: 'username', text: '전화번호 또는 아이디' }), username),
     h('div', { class: 'field' }, h('label', { for: 'password', text: '비밀번호' }), password),
     message,
     h('div', { class: 'spacer' }),
@@ -89,6 +95,7 @@ export async function renderLogin(view, { query, navigate }) {
     h('div', { class: 'roles', role: 'group', 'aria-label': '역할 선택' }, cards),
     form,
     ...extra,
-    h('p', { class: 'link-row', text: '시연용 계정입니다. 역할을 고르면 아이디와 비밀번호가 채워져요.' }),
+    h('button', { type: 'button', class: 'link', text: '처음이세요? 회원가입', onclick: () => navigate('/signup') }),
+    h('p', { class: 'link-row', text: '시연용 서비스예요. 역할을 고르면 시연 계정이 채워져요.' }),
   );
 }
