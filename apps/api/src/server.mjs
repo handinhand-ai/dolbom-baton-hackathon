@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { handleCareRequest } from './care/routes.mjs';
 import { createCareStore } from './care/store.mjs';
+import { createAuthStore } from './auth/auth-store.mjs';
+import { createAuthHandler, readSessionToken } from './auth/routes.mjs';
 
 const publicRoot = new URL('../../web/public/', import.meta.url);
 const assets = new Map([
@@ -19,7 +21,8 @@ function sendJson(response, statusCode, body) {
   response.end(JSON.stringify(body));
 }
 
-export function createApp({ careStore = createCareStore() } = {}) {
+export function createApp({ careStore = createCareStore(), authStore = createAuthStore({ getUser: careStore.getUser }) } = {}) {
+  const handleAuthRequest = createAuthHandler({ authStore, careStore, sendJson });
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
@@ -33,7 +36,10 @@ export function createApp({ careStore = createCareStore() } = {}) {
       return;
     }
 
-    if (await handleCareRequest({ request, response, url, store: careStore, sendJson })) return;
+    // A: 로그인·세션·역할 확인(/api/auth/*). D의 /api/care/*는 로그인 세션이 있으면 그 사용자로 처리합니다.
+    if (await handleAuthRequest({ request, response, url })) return;
+    const sessionUserId = authStore.userIdFor(readSessionToken(request));
+    if (await handleCareRequest({ request, response, url, store: careStore, sendJson, sessionUserId })) return;
 
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');

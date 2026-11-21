@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AuthSession",
+  "description": "GET /api/auth/session 과 POST /api/auth/login 의 data 값. 모든 필드는 항상 존재하며 해당 없으면 null입니다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user_id", "role", "display_name", "relation", "caregiver_type", "center_id", "center_name", "care_recipient_id", "care_recipient"],
+  "properties": {
+    "user_id": { "type": "string", "format": "uuid" },
+    "role": { "enum": ["guardian", "caregiver", "center_admin"] },
+    "display_name": { "type": "string" },
+    "relation": { "type": ["string", "null"], "description": "보호자만: 어머니, 아버지 등" },
+    "caregiver_type": { "type": ["string", "null"], "description": "종사자만: 긴급돌봄센터 종사자 등" },
+    "center_id": { "type": ["string", "null"], "description": "종사자·센터 관리자의 소속 센터" },
+    "center_name": { "type": ["string", "null"] },
+    "care_recipient_id": { "type": ["string", "null"], "description": "보호자: 본인 돌봄 대상 / 종사자: 지금 볼 수 있는 첫 배정 대상 / 센터 관리자: null" },
+    "care_recipient": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+    }
+  }
+}

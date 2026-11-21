@@ -1,12 +1,14 @@
 import { CareError } from './store.mjs';
 
 // /api/care/* 요청 처리. 처리했으면 true, 담당 경로가 아니면 false를 돌려줍니다.
-// TODO(A): 로그인 세션이 병합되면 getSessionUser를 A의 getSession()으로 바꿉니다.
-// 지금은 시연 계정 ID를 X-Demo-User 헤더로 받습니다(합성 계정만 존재).
+// A의 로그인 세션(sessionUserId)이 있으면 그 사용자를 씁니다.
+// 세션이 없을 때만 시연 계정 ID를 X-Demo-User 헤더로 받습니다(합성 계정만 존재, D 화면·테스트 호환용).
+// TODO: D 화면이 로그인 세션으로 옮겨 가면 X-Demo-User 대체 경로를 제거합니다.
 
 const MAX_BODY_BYTES = 16 * 1024;
 
-function getSessionUser(request, store) {
+function getSessionUser(request, store, sessionUserId) {
+  if (sessionUserId) return store.getUser(sessionUserId) ?? null;
   const userId = request.headers['x-demo-user'];
   if (typeof userId !== 'string' || userId.length === 0) return null;
   return store.getUser(userId) ?? null;
@@ -58,7 +60,7 @@ const routes = [
   }],
 ];
 
-export async function handleCareRequest({ request, response, url, store, sendJson }) {
+export async function handleCareRequest({ request, response, url, store, sendJson, sessionUserId = null }) {
   if (!url.pathname.startsWith('/api/care/')) return false;
 
   const matching = routes.filter(([, pattern]) => pattern.test(url.pathname));
@@ -74,7 +76,7 @@ export async function handleCareRequest({ request, response, url, store, sendJso
   }
 
   try {
-    const user = getSessionUser(request, store);
+    const user = getSessionUser(request, store, sessionUserId);
     const match = url.pathname.match(route[1]);
     const result = await route[2]({ store, user, request, url, match });
     const [status, body] = Array.isArray(result) && typeof result[0] === 'number' ? result : [200, result];
