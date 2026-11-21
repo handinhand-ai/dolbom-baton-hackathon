@@ -5,7 +5,7 @@ import { h } from './dom.js';
 import { renderLogin } from './login.js';
 import { renderSignup } from './signup.js';
 import { renderProfile, renderPhoto, renderAvatar } from './onboarding-screens.js';
-import { renderMyPage } from './my.js';
+import { renderActiveShares, renderMyPage, renderSentRecords } from './my.js';
 import { renderQuestionnaire } from '../b/questionnaire.js';
 import {
   renderGuardianHome, renderVoicePending, renderCareStatus, renderCareNew,
@@ -66,6 +66,8 @@ export const screens = new Map([
   ['/g/care/availability', (view, ctx) => renderUnconfirmedFeature(view, ctx, '센터 잔여 현황', '실시간 센터 잔여 인원 API가 아직 연동되지 않았습니다.')],
   ['/g/care/preference', (view, ctx) => renderUnconfirmedFeature(view, ctx, '희망 돌봄자', '희망 사항은 아이 맡기기 신청의 요청사항으로 전달할 수 있습니다.')],
   ['/g/my', renderMyPage],
+  ['/g/my/shares', renderActiveShares],
+  ['/g/my/sent', renderSentRecords],
   ['/c/home', renderCaregiverHome],
   ['/c/manual', renderCaregiverCard],
   ['/c/records', renderCaregiverRecords],

@@ -37,12 +37,12 @@ function sameOrigin(request) {
   }
 }
 
-async function readJson(request) {
+async function readJson(request, maxBytes = MAX_BODY_BYTES) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) throw new AuthError(413, '요청이 너무 커요.');
+    if (size > maxBytes) throw new AuthError(413, '요청이 너무 커요.');
     chunks.push(chunk);
   }
   try {
@@ -119,7 +119,7 @@ export function createAuthHandler({ authStore, careStore, sendJson }) {
       if (typeof body.username !== 'string' || typeof body.password !== 'string' || body.username.length > 64 || body.password.length > 128) {
         throw new AuthError(400, '아이디와 비밀번호를 입력해 주세요.');
       }
-      const userId = authStore.authenticate(body.username, body.password);
+      const userId = await authStore.authenticate(body.username, body.password);
       if (!userId) {
         failures.get(ip).push(Date.now());
         throw new AuthError(401, '아이디 또는 비밀번호가 올바르지 않아요.');
@@ -137,7 +137,7 @@ export function createAuthHandler({ authStore, careStore, sendJson }) {
       const body = await readJson(request);
       let userId;
       try {
-        userId = authStore.signUp(body);
+        userId = await authStore.signUp(body);
       } catch (error) {
         // 계정 생성까지 간 시도(이미 가입 409 포함)만 횟수에 넣습니다. 입력 오류(400)는 비용이 작아 세지 않습니다.
         if (error instanceof SignupError && error.status === 409) recent.push(Date.now());
@@ -157,8 +157,25 @@ export function createAuthHandler({ authStore, careStore, sendJson }) {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
       if (!name || name.length > 20) throw new AuthError(400, '이름은 1~20자로 입력해 주세요.');
       if (user.user_id === DEMO_IDS.guardian) throw new AuthError(403, '시연 계정의 돌봄 대상은 바꿀 수 없어요.');
-      careStore.upsertRecipient(user.user_id, name);
+      await authStore.saveProfile(user.user_id, { receiver: { name } });
       return { data: buildSession(user, careStore) };
+    }],
+    ['GET', '/api/auth/profile', async ({ request }) => {
+      const user = currentUser(request);
+      if (!user) throw new AuthError(401, '로그인이 필요해요.');
+      if (user.role !== 'guardian') throw new AuthError(403, '보호자 프로필만 불러올 수 있어요.');
+      return { data: await authStore.getProfile(user.user_id) };
+    }],
+    ['PUT', '/api/auth/profile', async ({ request }) => {
+      const user = currentUser(request);
+      if (!user) throw new AuthError(401, '로그인이 필요해요.');
+      if (user.role !== 'guardian') throw new AuthError(403, '보호자 프로필만 저장할 수 있어요.');
+      const body = await readJson(request, 2 * 1024 * 1024);
+      if (body.photo !== undefined && body.photo !== null
+        && (typeof body.photo !== 'string' || !/^data:image\/(?:jpeg|png|webp);base64,/.test(body.photo))) {
+        throw new AuthError(400, '이미지 형식이 올바르지 않아요.');
+      }
+      return { data: await authStore.saveProfile(user.user_id, body) };
     }],
     ['POST', '/api/auth/logout', ({ request, response }) => {
       const token = readSessionToken(request);

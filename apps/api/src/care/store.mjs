@@ -64,9 +64,24 @@ export function createCareStore({ now = () => new Date() } = {}) {
 
     // A 회원가입 연동: 가입한 사용자를 D의 역할 데이터에 등록합니다. 센터·종사자 구분은 호출 쪽이 검증해 넘깁니다.
     registerUser(user) {
+      const existing = findUser(user.user_id);
+      if (existing) return existing;
       const entry = { ...user, registered: true };
       registered.users.push(entry);
       data.users.push(entry);
+      return entry;
+    },
+    // Supabase에서 복원한 돌봄 대상을 기존 D/B 기능이 같은 UUID로 사용할 수 있게 등록합니다.
+    registerRecipient(recipient) {
+      const existing = data.care_recipients.find((item) => item.id === recipient.id);
+      if (existing) {
+        Object.assign(existing, recipient);
+        return existing;
+      }
+      const entry = { ...recipient };
+      registered.recipients.push(entry);
+      data.care_recipients.push(entry);
+      return entry;
     },
     // 보호자의 돌봄 대상을 만들거나 이름을 바꿉니다(보호자당 1명). 이름 검증은 호출 쪽 책임입니다.
     upsertRecipient(guardianUserId, name) {

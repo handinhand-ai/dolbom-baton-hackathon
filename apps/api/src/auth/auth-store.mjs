@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { DEMO_IDS } from '../care/demo-data.mjs';
 
-// A 담당: 로그인 세션·계정 저장소(메모리). 서버를 다시 시작하면 세션과 가입한 계정이 모두 사라집니다.
+// A 담당: 로그인 세션은 메모리, 회원가입 계정·프로필은 설정 시 Supabase 저장소를 사용합니다.
 // 시연 계정은 D의 시연 사용자(`care/demo-data.mjs`)와 같은 user_id를 씁니다(아이디·비밀번호는 합성 시연값).
 // 회원가입 계정은 전화번호를 아이디로 쓰고, 비밀번호는 scrypt 해시로만 보관합니다.
 
@@ -70,10 +70,44 @@ export function validateSignup(input, { centerIds = [] } = {}) {
 // getUser(userId)는 D의 careStore.getUser입니다. 역할·프로필은 그쪽 데이터를 단일 출처로 씁니다.
 // registerUser·listCenters를 주면 회원가입을 받습니다(없으면 가입 요청은 503).
 export function createAuthStore({
-  getUser, registerUser = null, listCenters = () => [], now = () => Date.now(), exposeDemoAccounts = process.env.AUTH_EXPOSE_DEMO_ACCOUNTS !== 'off',
+  getUser, registerUser = null, registerRecipient = null, listCenters = () => [], accountRepository = null,
+  now = () => Date.now(), exposeDemoAccounts = process.env.AUTH_EXPOSE_DEMO_ACCOUNTS !== 'off',
 } = {}) {
   const sessions = new Map();
   const accounts = new Map(); // 전화번호(숫자) → { user_id, salt, hash }
+  const profiles = new Map();
+
+  function registerCloudData(account, profile = null) {
+    registerUser?.({
+      user_id: account.user_id,
+      role: account.role,
+      display_name: account.display_name,
+      relation: account.relation ?? null,
+      caregiver_type: account.caregiver_type ?? null,
+      center_id: account.center_id ?? null,
+    });
+    if (profile?.care_recipient_id && profile?.recipient_name) {
+      registerRecipient?.({ id: profile.care_recipient_id, guardian_user_id: account.user_id, name: profile.recipient_name });
+    }
+  }
+
+  function publicProfile(row) {
+    if (!row) return null;
+    return {
+      care_recipient_id: row.care_recipient_id,
+      receiver: row.recipient_name ? {
+        name: row.recipient_name,
+        age: row.age,
+        sex: row.sex,
+        heightCm: row.height_cm,
+        weightKg: row.weight_kg,
+        impression: row.impression ?? '',
+      } : null,
+      photo: row.photo_data ?? null,
+      avatar: row.avatar ?? null,
+      onboardedAt: row.onboarded_at ?? null,
+    };
+  }
 
   return {
     exposeDemoAccounts,
@@ -87,36 +121,92 @@ export function createAuthStore({
     },
 
     // 회원가입: 계정을 만들고 사용자 ID를 돌려줍니다. 이미 있는 전화번호·시연 아이디면 409입니다.
-    signUp(input) {
+    async signUp(input) {
       if (!registerUser) throw new SignupError(503, '지금은 회원가입을 받지 않아요.');
       const valid = validateSignup(input, { centerIds: listCenters().map((center) => center.id) });
-      if (accounts.has(valid.phone) || DEMO_ACCOUNTS.some((account) => account.username === valid.phone)) {
+      const cloudAccount = accountRepository ? await accountRepository.findAccount(valid.phone) : null;
+      if (accounts.has(valid.phone) || cloudAccount || DEMO_ACCOUNTS.some((account) => account.username === valid.phone)) {
         throw new SignupError(409, '이미 가입된 전화번호예요. 로그인해 주세요.', 'phone');
       }
       const userId = randomUUID();
       const salt = randomBytes(16);
-      registerUser({
+      const user = {
         user_id: userId,
         role: valid.role,
         display_name: valid.display_name,
         ...(valid.role === 'caregiver' ? { caregiver_type: valid.caregiver_type, center_id: valid.center_id } : { relation: null }),
-      });
+      };
+      if (accountRepository) {
+        await accountRepository.createAccount({
+          ...user,
+          phone: valid.phone,
+          password_salt: salt.toString('hex'),
+          password_hash: hashPassword(valid.password, salt).toString('hex'),
+          caregiver_type: user.caregiver_type ?? null,
+          center_id: user.center_id ?? null,
+          relation: user.relation ?? null,
+        });
+      }
+      registerUser(user);
       accounts.set(valid.phone, { user_id: userId, salt, hash: hashPassword(valid.password, salt) });
       return userId;
     },
 
     // 아이디(시연 아이디 또는 전화번호)·비밀번호가 맞으면 사용자 ID를 돌려줍니다. 모든 계정을 같은 방식으로 비교합니다.
-    authenticate(username, password) {
+    async authenticate(username, password) {
       const login = normalizeLogin(username);
-      const record = accounts.get(login) ?? null;
+      let record = accounts.get(login) ?? null;
+      let cloudAccount = null;
+      if (!record && accountRepository && /^\d{10,11}$/.test(login)) {
+        cloudAccount = await accountRepository.findAccount(login);
+        if (cloudAccount) {
+          record = {
+            user_id: cloudAccount.user_id,
+            salt: Buffer.from(cloudAccount.password_salt, 'hex'),
+            hash: Buffer.from(cloudAccount.password_hash, 'hex'),
+          };
+        }
+      }
       const computed = hashPassword(password, record?.salt ?? DUMMY_SALT);
-      const registeredMatch = record && timingSafeEqual(computed, record.hash);
+      const registeredMatch = record && computed.length === record.hash.length && timingSafeEqual(computed, record.hash);
       let demo = null;
       for (const account of DEMO_ACCOUNTS) {
         if (safeEqual(account.username, login) && safeEqual(account.password, password)) demo = account;
       }
       const userId = registeredMatch ? record.user_id : demo?.user_id ?? null;
+      if (registeredMatch && cloudAccount) {
+        const profile = await accountRepository.getProfile(userId);
+        registerCloudData(cloudAccount, profile);
+      }
       return userId && getUser(userId) ? userId : null;
+    },
+
+    async saveProfile(userId, patch) {
+      const previousRow = accountRepository ? await accountRepository.getProfile(userId) : profiles.get(userId) ?? null;
+      const receiver = patch.receiver ?? publicProfile(previousRow)?.receiver ?? null;
+      const row = {
+        ...(previousRow ?? {}),
+        user_id: userId,
+        care_recipient_id: previousRow?.care_recipient_id ?? randomUUID(),
+        recipient_name: receiver?.name ?? previousRow?.recipient_name ?? null,
+        age: receiver?.age ?? previousRow?.age ?? null,
+        sex: receiver?.sex ?? previousRow?.sex ?? null,
+        height_cm: receiver?.heightCm ?? previousRow?.height_cm ?? null,
+        weight_kg: receiver?.weightKg ?? previousRow?.weight_kg ?? null,
+        impression: receiver?.impression ?? previousRow?.impression ?? null,
+        photo_data: patch.photo ?? previousRow?.photo_data ?? null,
+        avatar: patch.avatar ?? previousRow?.avatar ?? null,
+        onboarded_at: patch.completed ? new Date(now()).toISOString() : previousRow?.onboarded_at ?? null,
+      };
+      const saved = accountRepository ? await accountRepository.saveProfile(row) : row;
+      profiles.set(userId, saved);
+      if (saved.recipient_name) registerRecipient?.({ id: saved.care_recipient_id, guardian_user_id: userId, name: saved.recipient_name });
+      return publicProfile(saved);
+    },
+
+    async getProfile(userId) {
+      const row = accountRepository ? await accountRepository.getProfile(userId) : profiles.get(userId) ?? null;
+      return publicProfile(row);
     },
 
     createSession(userId) {

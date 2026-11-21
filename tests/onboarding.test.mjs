@@ -6,6 +6,7 @@ import { ONBOARDING_STEPS, resolveOnboarding, resolveRoute } from '../apps/web/p
 import {
   COLORS, createOnboardingStore, defaultAvatar, normalizeReceiver, recolorHoodie, validateAvatar, validateReceiver, withObjectParticle,
 } from '../apps/web/public/a/onboarding.js';
+import { onboardingDestination } from '../apps/web/public/a/onboarding-screens.js';
 
 // 모든 값은 합성 시연 데이터입니다.
 const valid = { name: '민준이', age: '24', sex: '남', heightCm: '172', weightKg: '65', impression: '보통 체형이에요.' };
@@ -136,6 +137,15 @@ test('onboarding routes are guardian-only', () => {
     assert.deepEqual(resolveRoute({ role: 'caregiver' }, path), { action: 'redirect', to: '/c/home' });
     assert.deepEqual(resolveRoute(null, path), { action: 'redirect', to: `/login?next=${encodeURIComponent(path)}` });
   }
+});
+
+test('mypage editing returns to mypage while initial onboarding keeps its next step', () => {
+  const edit = new URLSearchParams('mode=edit');
+  const initial = new URLSearchParams();
+  assert.equal(onboardingDestination(edit, '/g/onboarding/photo'), '/g/my');
+  assert.equal(onboardingDestination(edit, '/g/manual'), '/g/my');
+  assert.equal(onboardingDestination(initial, '/g/onboarding/photo'), '/g/onboarding/photo');
+  assert.equal(onboardingDestination(initial, '/g/manual'), '/g/manual');
 });
 
 test('hoodie recoloring changes only orange pixels and keeps transparency', () => {

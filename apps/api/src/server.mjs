@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { handleCareRequest } from './care/routes.mjs';
 import { createCareStore } from './care/store.mjs';
 import { createAuthStore } from './auth/auth-store.mjs';
+import { createSupabaseAccountStore } from './auth/supabase-account-store.mjs';
 import { createAuthHandler, readSessionToken } from './auth/routes.mjs';
 import { handleQuestionnaireAnswerRequest } from './questionnaire/routes.mjs';
 
@@ -16,6 +17,7 @@ const assets = new Map([
   ['/care.css', ['care.css', 'text/css; charset=utf-8']],
   ['/care.js', ['care.js', 'text/javascript; charset=utf-8']],
   ['/a/', ['a/index.html', 'text/html; charset=utf-8']],
+  ['/a/manifest.json', ['a/manifest.json', 'application/manifest+json; charset=utf-8']],
   ['/b/questionnaire.js', ['b/questionnaire.js', 'text/javascript; charset=utf-8']],
   ['/b/questionnaire.css', ['b/questionnaire.css', 'text/css; charset=utf-8']],
 ]);
@@ -79,12 +81,23 @@ async function loadQuestionnaire({ fetchImpl, supabaseUrl, supabaseAnonKey }) {
 
 export function createApp({
   careStore = createCareStore(),
-  authStore = createAuthStore({ getUser: careStore.getUser, registerUser: careStore.registerUser, listCenters: careStore.listCenters }),
+  authStore = null,
+  accountRepository = null,
   fetchImpl = fetch,
   supabaseUrl = process.env.SUPABASE_URL ?? '',
   supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
 } = {}) {
-  const handleAuthRequest = createAuthHandler({ authStore, careStore, sendJson });
+  const cloudAccounts = accountRepository ?? (supabaseUrl && supabaseAnonKey
+    ? createSupabaseAccountStore({ fetchImpl, supabaseUrl, supabaseAnonKey })
+    : null);
+  const activeAuthStore = authStore ?? createAuthStore({
+    getUser: careStore.getUser,
+    registerUser: careStore.registerUser,
+    registerRecipient: careStore.registerRecipient,
+    listCenters: careStore.listCenters,
+    accountRepository: cloudAccounts,
+  });
+  const handleAuthRequest = createAuthHandler({ authStore: activeAuthStore, careStore, sendJson });
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
@@ -100,7 +113,7 @@ export function createApp({
 
     // A: 로그인·세션·역할 확인(/api/auth/*). D의 /api/care/*는 로그인 세션이 있으면 그 사용자로 처리합니다.
     if (await handleAuthRequest({ request, response, url })) return;
-    const sessionUserId = authStore.userIdFor(readSessionToken(request));
+    const sessionUserId = activeAuthStore.userIdFor(readSessionToken(request));
     if (await handleCareRequest({ request, response, url, store: careStore, sendJson, sessionUserId })) return;
     if (await handleQuestionnaireAnswerRequest({
       request,

@@ -2,6 +2,7 @@
 // All care requests use the existing authenticated D API; no fabricated availability or AI results.
 import { h } from './dom.js';
 import { createOnboardingStore } from './onboarding.js';
+import { getProfile } from './api.js';
 import { characterUrl } from './onboarding-screens.js';
 
 const badge = (text, tone = '') => h('span', { class: `f-chip ${tone}`, text });
@@ -60,7 +61,16 @@ export async function renderGuardianHome(view, { session, navigate }) {
   view.append(h('header', { class: 'f-brand' }, h('span', { text: '돌봄바통' })),
     h('h1', { tabindex: '-1', class: 'f-greeting', text: '큰소리를 힘들어하고,\n그림 카드로 마음을 표현해요' }));
   const child = session.care_recipient;
-  const onboarding = createOnboardingStore(globalThis.localStorage, session.user_id).load();
+  const onboardingStore = createOnboardingStore(globalThis.localStorage, session.user_id);
+  let onboarding = onboardingStore.load();
+  try {
+    const cloud = await getProfile();
+    if (cloud) {
+      onboarding = { ...onboarding, receiver: cloud.receiver ?? onboarding.receiver, avatar: cloud.avatar ?? onboarding.avatar };
+      onboardingStore.save(onboarding);
+      if (cloud.photo) onboardingStore.savePhoto(cloud.photo);
+    }
+  } catch { /* Retain the last local profile when the cloud is unavailable. */ }
   const recipientName = onboarding.receiver?.name || child?.name || '돌봄 대상 등록이 필요해요';
   const recipientFacts = onboarding.receiver
     ? [onboarding.receiver.age, onboarding.receiver.sex].filter(Boolean).join(' · ')

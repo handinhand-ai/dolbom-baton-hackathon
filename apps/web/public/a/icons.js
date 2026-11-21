@@ -10,6 +10,12 @@ const PATHS = {
   back: 'M15 5l-7 7 7 7',
   camera: 'M4 8h3l1.5-2h7L17 8h3v11H4z M12 16.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z',
   lock: 'M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+  phone: 'M7 3h3l1.5 4-2 1.5a14 14 0 0 0 6 6l1.5-2 4 1.5v3c0 2-1.5 4-4 4C9.5 21 3 14.5 3 7c0-2.5 2-4 4-4z',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2',
+  menu: 'M5 7h14 M5 12h14 M5 17h9',
+  download: 'M12 3v12 M7.5 11l4.5 4.5 4.5-4.5 M5 20h14',
+  mobile: 'M7 2.5h10v19H7z M11 18.5h2',
+  chevron: 'M9 5l7 7-7 7',
 };
 
 export function icon(name, size = 24) {
