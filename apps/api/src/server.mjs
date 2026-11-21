@@ -6,6 +6,7 @@ import { createAuthStore } from './auth/auth-store.mjs';
 import { createSupabaseAccountStore } from './auth/supabase-account-store.mjs';
 import { createAuthHandler, readSessionToken } from './auth/routes.mjs';
 import { handleQuestionnaireAnswerRequest } from './questionnaire/routes.mjs';
+import { createCBridge } from './c-bridge.mjs';
 
 const publicRoot = new URL('../../web/public/', import.meta.url);
 const assets = new Map([
@@ -98,6 +99,7 @@ export function createApp({
     accountRepository: cloudAccounts,
   });
   const handleAuthRequest = createAuthHandler({ authStore: activeAuthStore, careStore, sendJson });
+  const handleCRequest = createCBridge({ careStore, authStore: activeAuthStore, fetchImpl, supabaseUrl, supabaseAnonKey, sendJson });
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
@@ -126,6 +128,8 @@ export function createApp({
       supabaseAnonKey,
       sendJson,
     })) return;
+
+    if (await handleCRequest({ request, response, url })) return;
 
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');

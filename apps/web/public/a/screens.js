@@ -7,6 +7,7 @@ import { renderSignup } from './signup.js';
 import { renderProfile, renderPhoto, renderAvatar } from './onboarding-screens.js';
 import { renderActiveShares, renderMyPage, renderSentRecords } from './my.js';
 import { renderQuestionnaire } from '../b/questionnaire.js';
+import { renderCRecord, renderCManual } from './c-integrated.js';
 import {
   renderGuardianHome, renderVoicePending, renderCareStatus, renderCareNew,
   renderCaregiverHome, renderCaregiverCard, renderCaregiverRecords,
@@ -59,7 +60,7 @@ export const screens = new Map([
   ['/g/onboarding/photo', renderPhoto],
   ['/g/onboarding/avatar', renderAvatar],
   ['/g/home', renderGuardianHome],
-  ['/g/voice', renderVoicePending],
+  ['/g/voice', renderCRecord],
   ['/g/manual', renderQuestionnaire],
   ['/g/care', renderCareStatus],
   ['/g/care/new', renderCareNew],
@@ -69,8 +70,8 @@ export const screens = new Map([
   ['/g/my/shares', renderActiveShares],
   ['/g/my/sent', renderSentRecords],
   ['/c/home', renderCaregiverHome],
-  ['/c/manual', renderCaregiverCard],
-  ['/c/records', renderCaregiverRecords],
+  ['/c/manual', renderCManual],
+  ['/c/records', renderCRecord],
   ['/c/my', renderMyPage],
   ['/c/center-admin', renderCenterAdmin],
 ]);
