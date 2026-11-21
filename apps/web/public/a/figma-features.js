@@ -3,7 +3,7 @@
 import { h } from './dom.js';
 import { createOnboardingStore } from './onboarding.js';
 import { getProfile } from './api.js';
-import { characterUrl } from './onboarding-screens.js';
+import { mascotVectorUrl } from './mascot-vector.js';
 
 const badge = (text, tone = '') => h('span', { class: `f-chip ${tone}`, text });
 const button = (label, action, className = '') => h('button', { type: 'button', class: `f-button ${className}`, text: label, onclick: action });
@@ -75,10 +75,7 @@ export async function renderGuardianHome(view, { session, navigate }) {
   const recipientFacts = onboarding.receiver
     ? [onboarding.receiver.age, onboarding.receiver.sex].filter(Boolean).join(' · ')
     : null;
-  let portrait = '/a/assets/minjun.png';
-  if (onboarding.avatar?.color) {
-    try { portrait = await characterUrl(onboarding.avatar.color); } catch { /* Use the bundled Figma mascot. */ }
-  }
+  const portrait = mascotVectorUrl;
   view.append(
     h('section', { class: 'f-hero' },
       h('img', { src: portrait, width: '153', height: '183', alt: '주황색 옷과 빨간 헤드폰을 쓴 돌봄바통 캐릭터' }),
