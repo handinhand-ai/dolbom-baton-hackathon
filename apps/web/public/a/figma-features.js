@@ -185,13 +185,26 @@ export async function renderCaregiverHome(view, { navigate }) {
   view.append(container);
   try {
     const assigned = await careApi('/api/care/assignments');
-    if (!assigned.length) { container.append(card(paragraph('아직 배정된 분이 없어요. 센터에서 배정하면 이곳에 나타나요.'))); return; }
-    for (const item of assigned) container.append(card(
-      h('h2', { text: item.care_recipient_name || '돌봄 대상' }),
-      badge(item.can_view_now ? '열람 가능' : '이용 시작 전', item.can_view_now ? 'f-good' : ''),
-      caption(item.center_name || '센터'), caption(`${fmt(item.starts_at)} ~ ${fmt(item.ends_at)}`),
-      caption(`공유: ${(item.shared_categories || []).join(' · ')}`),
-      item.can_view_now ? button('한 장 카드 보기', () => navigate('/c/manual')) : notice('시작 시각 전에는 설명서를 열람할 수 없습니다.')));
+    if (!assigned.length) {
+      container.append(card(paragraph('아직 배정된 분이 없어요. 보호자가 아이 맡기기를 신청하고 센터 관리자가 종사자를 배정하면 에이전트를 이용할 수 있습니다.')));
+      return;
+    }
+    for (const item of assigned) {
+      const available = Boolean(item.can_view_now);
+      const actions = available
+        ? h('div', { class: 'f-list' },
+          button('상황별 돌봄 에이전트 · 물어보기', () => navigate('/c/agent')),
+          button('돌봄 기록 남기기', () => navigate('/c/records'), 'f-secondary'))
+        : notice('돌봄 시작 시각 전에는 설명서 및 에이전트의 개인별 근거를 열람할 수 없습니다.');
+      container.append(card(
+        h('h2', { text: item.care_recipient_name || '돌봄 대상' }),
+        badge(available ? '열람 가능' : '이용 시작 전', available ? 'f-good' : ''),
+        caption(item.center_name || '센터'),
+        caption(`${fmt(item.starts_at)} ~ ${fmt(item.ends_at)}`),
+        caption(`공유: ${(item.shared_categories || []).join(' · ')}`),
+        actions,
+      ));
+    }
   } catch (error) { container.append(h('p', { class: 'f-error', role: 'alert', text: error.message })); }
 }
 
