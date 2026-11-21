@@ -14,7 +14,15 @@ const assets = new Map([
   ['/care', ['care.html', 'text/html; charset=utf-8']],
   ['/care.css', ['care.css', 'text/css; charset=utf-8']],
   ['/care.js', ['care.js', 'text/javascript; charset=utf-8']],
+  ['/a/', ['a/index.html', 'text/html; charset=utf-8']],
 ]);
+const uiTypes = {
+  js: 'text/javascript; charset=utf-8',
+  css: 'text/css; charset=utf-8',
+  html: 'text/html; charset=utf-8',
+  png: 'image/png',
+  woff2: 'font/woff2',
+};
 
 function sendJson(response, statusCode, body) {
   response.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -54,7 +62,10 @@ export function createApp({ careStore = createCareStore(), authStore = createAut
       return;
     }
 
-    const asset = assets.get(pathname);
+    // A 공통 화면: /a/ 아래 파일은 이름 규칙에 맞는 것만 제공합니다(영문 소문자·숫자·'-', 폴더 1단계).
+    // 규칙에 '..'과 점으로 시작하는 이름이 들어갈 수 없어 저장소의 다른 파일은 노출되지 않습니다.
+    const uiMatch = /^\/a\/((?:[a-z0-9-]+\/)?[a-z0-9-]+)\.(js|css|html|png|woff2)$/.exec(pathname);
+    const asset = assets.get(pathname) ?? (uiMatch ? [`a/${uiMatch[1]}.${uiMatch[2]}`, uiTypes[uiMatch[2]]] : null);
     if (!asset) {
       sendJson(response, 404, { error: 'Not found' });
       return;
@@ -64,7 +75,11 @@ export function createApp({ careStore = createCareStore(), authStore = createAut
       const content = await readFile(new URL(asset[0], publicRoot));
       response.writeHead(200, { 'Content-Type': asset[1] });
       response.end(content);
-    } catch {
+    } catch (error) {
+      if (uiMatch && error.code === 'ENOENT') {
+        sendJson(response, 404, { error: 'Not found' });
+        return;
+      }
       sendJson(response, 500, { error: 'Unable to load application asset' });
     }
   });

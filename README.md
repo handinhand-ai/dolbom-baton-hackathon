@@ -24,7 +24,16 @@ npm run dev
 
 ## 인증·세션 API (A)
 
-시연 계정 로그인·로그아웃, 로그인 상태 조회, 역할 확인 API(`/api/auth/*`)를 제공합니다. 세션은 HttpOnly 쿠키이고 저장소는 서버 메모리입니다. 경로·요청·응답 예시와 역할별 반환값은 [`docs/auth-api.md`](docs/auth-api.md)에서 확인합니다. 로그인 화면은 포함하지 않습니다.
+시연 계정 로그인·로그아웃, 로그인 상태 조회, 역할 확인 API(`/api/auth/*`)를 제공합니다. 세션은 HttpOnly 쿠키이고 저장소는 서버 메모리입니다. 경로·요청·응답 예시와 역할별 반환값은 [`docs/auth-api.md`](docs/auth-api.md)에서 확인합니다.
+
+### 공통 화면 틀 (A)
+
+`npm run dev` 후 <http://127.0.0.1:3000/a/>에서 로그인 → 역할별 시작 화면 → 하단 탭 틀을 확인합니다. UI 레퍼런스 v0.3(색·글자·버튼·알약 탭)과 Pretendard Variable(SIL OFL, `apps/web/public/a/fonts/`)을 적용했습니다. 시연 계정은 `guardian`, `caregiver`, `center`(비밀번호 `demo-1234`)이며 로그인 화면에서 역할을 고르면 채워집니다.
+
+- 라우트: 보호자 `/g/home·manual·care·my`, 돌봄 선생님 `/c/home·manual·records·my`, 센터 관리자 `/c/center-admin`. 로그인하지 않았거나 역할이 다르면 `/login`·자기 홈으로 이동합니다(`access.js`).
+- B·C·D는 `apps/web/public/a/screens.js`에서 자기 경로 한 줄만 교체해 화면을 끼웁니다. 아직 없는 화면은 자리표시 카드로 보입니다.
+- 재사용: `a.css`(디자인 토큰·버튼·카드·탭), `icons.js`(선 아이콘), `access.js`(역할별 탭·접근 규칙), `api.js`(`getSession()` 등), `assets/minjun.png`(시연 캐릭터).
+- 한계: 설명서·아이 맡기기·돌봄기록은 자리표시이고, D의 시연 화면(`/care`)은 아직 탭에 연결하지 않았습니다.
 
 ## 검증
 
