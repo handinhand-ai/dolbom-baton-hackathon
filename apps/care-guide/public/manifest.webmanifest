@@ -1,0 +1,14 @@
+{
+  "name": "돌봄바통",
+  "short_name": "돌봄바통",
+  "description": "종사자용 한 장 카드·물어보기·기록하기 (연습용 MVP, 합성 데이터)",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F9FD",
+  "theme_color": "#3F63F3",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
