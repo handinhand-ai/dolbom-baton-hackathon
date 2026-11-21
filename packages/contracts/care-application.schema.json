@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CareApplicationRequest",
+  "description": "D 담당: 보호자가 센터에 전달하는 아이 맡기기 요청. guardian_user_id와 status는 서버가 정하며 본문 값은 무시합니다.",
+  "type": "object",
+  "required": ["care_recipient_id", "center_id", "requested_start_at", "requested_end_at", "shared_categories"],
+  "properties": {
+    "care_recipient_id": { "type": "string", "format": "uuid" },
+    "center_id": { "type": "string", "format": "uuid" },
+    "requested_start_at": { "type": "string", "format": "date-time" },
+    "requested_end_at": { "type": "string", "format": "date-time", "description": "requested_start_at보다 늦어야 합니다." },
+    "shared_categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["소통", "식사", "위생", "약", "일과", "정서·행동", "안전"] },
+      "description": "보호자가 고른 공유 범위. 화면 기본값에서 위생은 빠집니다."
+    },
+    "request_note": { "type": "string", "maxLength": 300 }
+  }
+}
