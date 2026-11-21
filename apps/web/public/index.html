@@ -3,31 +3,57 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>돌봄 바통 | 손에손잡고</title>
+    <title>아이에 대해 알려주세요 | 돌봄 바통</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
   </head>
   <body>
-    <main>
-      <header>
-        <span class="team">손에손잡고</span>
-        <span class="badge">개발 준비 중</span>
-      </header>
-      <section class="intro" aria-labelledby="title">
-        <p class="eyebrow">AI 돌봄 인수인계</p>
-        <h1 id="title">돌봄 바통</h1>
-        <p class="lead">익숙한 돌봄이 다음 사람에게 이어지도록.</p>
-        <p>보호자가 남긴 경험을 정리하고, 확인한 내용을 필요한 돌봄자에게 전하는 서비스를 준비하고 있습니다.</p>
+    <main class="app-shell">
+      <section class="questionnaire" aria-labelledby="question-title">
+        <header class="topbar">
+          <button id="back-button" class="icon-button" type="button" aria-label="이전 질문">‹</button>
+          <button id="skip-button" class="skip-button" type="button">건너뛰기</button>
+        </header>
+
+        <div class="heading">
+          <p class="eyebrow">돌봄 설명서 만들기</p>
+          <h1 id="question-title">아이에 대해 알려주세요</h1>
+          <p>몰라도 괜찮아요. 가까운 걸 골라 주세요.</p>
+        </div>
+
+        <div id="progress" class="progress" aria-label="질문 진행률"></div>
+        <p id="question-count" class="question-count" aria-live="polite"></p>
+
+        <div id="loading" class="state-card" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          질문을 불러오고 있어요.
+        </div>
+        <div id="error" class="state-card error-card" role="alert" hidden>
+          <strong>질문을 불러오지 못했어요.</strong>
+          <span id="error-detail"></span>
+          <button id="retry-button" class="secondary-button" type="button">다시 시도</button>
+        </div>
+
+        <form id="question-form" hidden>
+          <div class="question-copy">
+            <span id="required-badge" class="required-badge" hidden>필수</span>
+            <h2 id="current-question"></h2>
+            <p id="question-helper"></p>
+          </div>
+          <div id="option-groups" class="option-groups"></div>
+          <label class="detail-field">
+            <span>더 알려 줄 게 있다면 <small>(선택)</small></span>
+            <textarea id="answer-detail" rows="3" placeholder="직접 입력해 주세요"></textarea>
+          </label>
+          <p id="validation-message" class="validation-message" role="alert"></p>
+        </form>
+
+        <footer class="actions">
+          <button id="next-button" class="primary-button" type="button" disabled>다음</button>
+          <p>답변은 로그인 연동 전까지 이 화면에만 임시 보관됩니다.</p>
+        </footer>
       </section>
-      <section class="steps" aria-label="기획 중인 사용 흐름">
-        <article><span class="number">01</span><h2>경험 남기기</h2><p>평소의 의사소통 방식과 생활 습관을 기록합니다.</p></article>
-        <article><span class="number">02</span><h2>확인하고 보완하기</h2><p>정리된 내용을 검토하고 부족한 정보를 보완합니다.</p></article>
-        <article><span class="number">03</span><h2>선택해서 전달하기</h2><p>선택한 내용만 지정한 돌봄자에게 전달합니다.</p></article>
-      </section>
-      <footer>
-        <p class="notice">현재는 개발 환경 확인용 화면입니다. 기록·AI·공유 기능은 아직 구현되지 않았으며 기획은 변경될 수 있습니다.</p>
-        <p id="health" role="status">서버 연결 확인 중…</p>
-      </footer>
     </main>
   </body>
 </html>
