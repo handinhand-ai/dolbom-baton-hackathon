@@ -37,3 +37,17 @@
 .f-check input{width:18px;min-height:18px;height:18px;accent-color:#3f63f3;margin:0}
 .f-chips{display:flex;flex-wrap:wrap;gap:7px}
 @media(max-width:370px){.f-screen{padding:17px 15px 125px}.f-greeting{font-size:23px!important}.f-panel{padding:14px}}
+
+/* Submission mobile home layout correction */
+main.f-home { padding-top: 14px; padding-left: clamp(15px, 4.5vw, 22px); padding-right: clamp(15px, 4.5vw, 22px); }
+.f-home .f-brand { margin-bottom: 12px; }
+.f-home .f-greeting { font-size: clamp(22px, 6vw, 27px) !important; line-height: 1.3; margin: 12px auto 10px !important; }
+.f-home .f-hero { margin: 6px auto 12px; }
+.f-home .f-hero img { display: block; width: min(190px, 53vw); max-width: 100%; height: auto; max-height: none; object-fit: contain; border-radius: 0; }
+.f-home .f-hero h2 { margin: 9px 0 2px; }
+.f-home .f-quick { margin-top: 14px; }
+.f-home .f-tile-grid { margin: 8px 0 12px; }
+.f-home .f-note { margin-top: 12px; }
+main.f-home.with-tabs { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+.tabbar { z-index: 10; bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 360px) { .f-home .f-tile { padding: 12px; } .f-home .f-tile strong { font-size: 14px; } }

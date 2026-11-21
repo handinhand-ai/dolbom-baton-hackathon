@@ -75,7 +75,7 @@ export async function renderGuardianHome(view, { session, navigate }) {
   const recipientFacts = onboarding.receiver
     ? [onboarding.receiver.age, onboarding.receiver.sex].filter(Boolean).join(' · ')
     : null;
-  let portrait = '/a/assets/figma-mascot.png';
+  let portrait = '/a/assets/minjun.png';
   if (onboarding.avatar?.color) {
     try { portrait = await characterUrl(onboarding.avatar.color); } catch { /* Use the bundled Figma mascot. */ }
   }
@@ -90,7 +90,7 @@ export async function renderGuardianHome(view, { session, navigate }) {
     h('section', { class: 'f-tile-grid' },
       h('a', { href: '#/g/voice', class: 'f-tile' }, h('strong', { text: '🎤 한마디 기록' }), caption('말로 남기는 돌봄 경험')),
       h('a', { href: '#/g/care', class: 'f-tile' }, h('strong', { text: '💙 돌봄 신청' }), caption('센터에 선택한 정보 전달'))),
-    notice('질문지 저장과 돌봄 신청은 기존 A·B·D API를 사용합니다. AI 받아쓰기는 C 연결 후 사용할 수 있어요.'));
+    notice('질문지 저장과 돌봄 신청은 기존 A·B·D API를 사용합니다. 한마디 기록은 로그인 후 이용하며, 기록의 공유 범위는 보호자가 확인합니다.'));
 }
 
 export function renderVoicePending(view, { navigate }) {
