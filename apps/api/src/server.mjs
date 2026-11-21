@@ -7,6 +7,7 @@ import { createSupabaseAccountStore } from './auth/supabase-account-store.mjs';
 import { createAuthHandler, readSessionToken } from './auth/routes.mjs';
 import { handleQuestionnaireAnswerRequest } from './questionnaire/routes.mjs';
 import { createCBridge } from './c-bridge.mjs';
+import { createQuestionnaireReader } from './c-questionnaire-source.mjs';
 
 const publicRoot = new URL('../../web/public/', import.meta.url);
 const assets = new Map([
@@ -81,25 +82,28 @@ async function loadQuestionnaire({ fetchImpl, supabaseUrl, supabaseAnonKey }) {
 }
 
 export function createApp({
-  careStore = createCareStore(),
+  careStore = null,
   authStore = null,
   accountRepository = null,
   fetchImpl = fetch,
   supabaseUrl = process.env.SUPABASE_URL ?? '',
   supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
 } = {}) {
+  const activeCareStore = careStore ?? createCareStore({
+    questionnaireReader: createQuestionnaireReader({ url: supabaseUrl, key: supabaseAnonKey, fetcher: fetchImpl }),
+  });
   const cloudAccounts = accountRepository ?? (supabaseUrl && supabaseAnonKey
     ? createSupabaseAccountStore({ fetchImpl, supabaseUrl, supabaseAnonKey })
     : null);
   const activeAuthStore = authStore ?? createAuthStore({
-    getUser: careStore.getUser,
-    registerUser: careStore.registerUser,
-    registerRecipient: careStore.registerRecipient,
-    listCenters: careStore.listCenters,
+    getUser: activeCareStore.getUser,
+    registerUser: activeCareStore.registerUser,
+    registerRecipient: activeCareStore.registerRecipient,
+    listCenters: activeCareStore.listCenters,
     accountRepository: cloudAccounts,
   });
-  const handleAuthRequest = createAuthHandler({ authStore: activeAuthStore, careStore, sendJson });
-  const handleCRequest = createCBridge({ careStore, authStore: activeAuthStore, fetchImpl, supabaseUrl, supabaseAnonKey, sendJson });
+  const handleAuthRequest = createAuthHandler({ authStore: activeAuthStore, careStore: activeCareStore, sendJson });
+  const handleCRequest = createCBridge({ careStore: activeCareStore, authStore: activeAuthStore, fetchImpl, supabaseUrl, supabaseAnonKey, sendJson });
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
@@ -116,13 +120,13 @@ export function createApp({
     // A: 로그인·세션·역할 확인(/api/auth/*). D의 /api/care/*는 로그인 세션이 있으면 그 사용자로 처리합니다.
     if (await handleAuthRequest({ request, response, url })) return;
     const sessionUserId = activeAuthStore.userIdFor(readSessionToken(request));
-    if (await handleCareRequest({ request, response, url, store: careStore, sendJson, sessionUserId })) return;
+    if (await handleCareRequest({ request, response, url, store: activeCareStore, sendJson, sessionUserId })) return;
     if (await handleQuestionnaireAnswerRequest({
       request,
       response,
       url,
       sessionUserId,
-      careStore,
+      careStore: activeCareStore,
       fetchImpl,
       supabaseUrl,
       supabaseAnonKey,

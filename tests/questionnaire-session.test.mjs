@@ -111,3 +111,34 @@ test('saving answers uses the care recipient from the session and replaces selec
   assert.equal('Accept-Profile' in optionDelete.options.headers, false);
 });
 
+test('care share summary counts completed questionnaire answers by manual category', async (context) => {
+  const fetchImpl = async (url) => {
+    if (String(url).includes('/rest/v1/questionnaire_answer?')) {
+      return new Response(JSON.stringify([{
+        answer_id: '10000000-0000-4000-8000-000000000003',
+        answer_text: '아침에 먹어요.',
+        created_at: '2026-11-21T00:00:00.000Z',
+        questionnaire_question: {
+          question_id: 'initial-health-safety-04',
+          category: 'health_safety',
+          section: 'must',
+          question_text: '약은 언제, 어떻게 먹나요?',
+        },
+        questionnaire_answer_option: [],
+      }]), { status: 200 });
+    }
+    return new Response(JSON.stringify([]), { status: 200 });
+  };
+  const base = await startServer(context, fetchImpl);
+  const cookie = await login(base);
+
+  const response = await fetch(`${base}/api/care/share-summary?care_recipient_id=${DEMO_IDS.recipient}`, {
+    headers: { Cookie: cookie },
+  });
+
+  assert.equal(response.status, 200);
+  const { data } = await response.json();
+  assert.equal(data.find((item) => item.category === '약').confirmed_count, 1);
+  assert.equal(data.find((item) => item.category === '소통').confirmed_count, 0);
+});
+
