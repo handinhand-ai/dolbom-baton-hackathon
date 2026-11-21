@@ -5,6 +5,11 @@ import { h } from './dom.js';
 import { renderLogin } from './login.js';
 import { renderMyPage } from './my.js';
 import { renderQuestionnaire } from '../b/questionnaire.js';
+import {
+  renderGuardianHome, renderVoicePending, renderCareStatus, renderCareNew,
+  renderCaregiverHome, renderCaregiverCard, renderCaregiverRecords,
+  renderCenterAdmin, renderUnconfirmedFeature,
+} from './figma-features.js';
 
 const CHARACTER = '/a/assets/minjun.png';
 
@@ -47,13 +52,17 @@ function caregiverHome(view, { session }) {
 
 export const screens = new Map([
   ['/login', renderLogin],
-  ['/g/home', guardianHome],
+  ['/g/home', renderGuardianHome],
+  ['/g/voice', renderVoicePending],
   ['/g/manual', renderQuestionnaire],
-  ['/g/care', placeholder('아이 맡기기', 'D', '아이 맡기기 화면을 이 탭에 연결할 예정이에요.', D_SCREEN)],
+  ['/g/care', renderCareStatus],
+  ['/g/care/new', renderCareNew],
+  ['/g/care/availability', (view, ctx) => renderUnconfirmedFeature(view, ctx, '센터 잔여 현황', '실시간 센터 잔여 인원 API가 아직 연동되지 않았습니다.')],
+  ['/g/care/preference', (view, ctx) => renderUnconfirmedFeature(view, ctx, '희망 돌봄자', '희망 사항은 아이 맡기기 신청의 요청사항으로 전달할 수 있습니다.')],
   ['/g/my', renderMyPage],
-  ['/c/home', caregiverHome],
-  ['/c/manual', placeholder('설명서', 'B (한 장 카드)', '배정된 대상이 보내 준 설명서가 여기에 보여요.')],
-  ['/c/records', placeholder('돌봄기록', 'C')],
+  ['/c/home', renderCaregiverHome],
+  ['/c/manual', renderCaregiverCard],
+  ['/c/records', renderCaregiverRecords],
   ['/c/my', renderMyPage],
-  ['/c/center-admin', placeholder('센터 화면 (시연용)', 'D', '들어온 요청을 수락하고 종사자를 배정하는 화면이에요.', D_SCREEN)],
+  ['/c/center-admin', renderCenterAdmin],
 ]);
