@@ -13,7 +13,7 @@ export class CareError extends Error {
 
 const PENDING = new Set(['submitted']);
 
-export function createCareStore({ now = () => new Date() } = {}) {
+export function createCareStore({ now = () => new Date(), questionnaireReader = null } = {}) {
   let data = createDemoData();
   let applications = [];
   let assignments = [];
@@ -98,11 +98,17 @@ export function createCareStore({ now = () => new Date() } = {}) {
     listCenters: () => data.centers.map((center) => ({ ...center })),
 
     // B의 getShareableSummary 자리(합성). 보호자 본인 대상만 조회합니다.
-    shareSummary(user, careRecipientId) {
+    async shareSummary(user, careRecipientId) {
       requireRole(user, 'guardian');
       const recipient = data.care_recipients.find((item) => item.id === careRecipientId);
       if (!recipient || recipient.guardian_user_id !== user.user_id) throw new CareError(404, '돌봄 대상을 찾을 수 없어요.');
-      const counts = data.manual_summary[careRecipientId] ?? {};
+      const questionnaireItems = questionnaireReader ? await questionnaireReader(careRecipientId) : null;
+      const counts = questionnaireItems
+        ? questionnaireItems.reduce((result, item) => {
+          if (CATEGORIES.includes(item.category)) result[item.category] = (result[item.category] ?? 0) + 1;
+          return result;
+        }, {})
+        : data.manual_summary[careRecipientId] ?? {};
       return CATEGORIES.map((category) => ({ category, confirmed_count: counts[category] ?? 0 }));
     },
 
