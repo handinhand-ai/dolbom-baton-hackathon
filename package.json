@@ -4,11 +4,16 @@
   "private": true,
   "description": "A framework-neutral starting point for a care handover prototype.",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "node --watch apps/api/src/index.mjs",
+    "dev": "node --watch apps/api/src/index.mjs --c-demo",
     "start": "node apps/api/src/index.mjs",
     "check": "node scripts/check.mjs",
     "test": "node --test"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }
