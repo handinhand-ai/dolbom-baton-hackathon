@@ -1,7 +1,7 @@
 // 보호자 온보딩 화면 3장: 기본 정보(1/4) · 증명사진(2/4) · 캐릭터(3/4). 4/4 처음 질문지는 B의 /g/manual입니다.
-// 입력값은 이 기기에만 저장합니다(onboarding.js). 증명사진은 서버로 보내지 않습니다.
+// 입력 중에는 이 기기에 임시 보관하고, 각 단계를 마치면 서버를 통해 Supabase에도 저장합니다.
 import { ONBOARDING_STEPS } from './access.js';
-import { saveRecipient } from './api.js';
+import { getProfile, saveProfile } from './api.js';
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import {
@@ -12,6 +12,10 @@ const CHARACTER = '/a/assets/minjun.png';
 const QUESTIONNAIRE_PATH = '/g/manual';
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
+export function onboardingDestination(query, fallback) {
+  return query?.get('mode') === 'edit' ? '/g/my' : fallback;
+}
 
 function storeFor(session) {
   let storage = null;
@@ -56,8 +60,16 @@ function textField({ id, label, value = '', suffix, inputmode, maxlength, error 
   };
 }
 
-export function renderProfile(view, { session, navigate }) {
+export async function renderProfile(view, { session, navigate, query }) {
   const store = storeFor(session);
+  try {
+    const cloud = await getProfile();
+    if (cloud?.receiver) store.save({ receiver: cloud.receiver });
+    if (cloud?.photo) store.savePhoto(cloud.photo);
+    if (cloud?.avatar) store.save({ avatar: cloud.avatar });
+  } catch {
+    // 네트워크 오류가 나도 이 기기의 임시 입력값으로 계속 작성할 수 있습니다.
+  }
   const saved = store.load().receiver ?? {};
   let sex = saved.sex ?? null;
 
@@ -95,7 +107,8 @@ export function renderProfile(view, { session, navigate }) {
     recognition.start();
   });
 
-  const button = h('button', { type: 'button', text: '다음' });
+  const editing = query?.get('mode') === 'edit';
+  const button = h('button', { type: 'button', text: editing ? '저장' : '다음' });
   button.addEventListener('click', async () => {
     const input = { name: name.input.value, age: age.input.value.trim(), sex, heightCm: height.input.value.trim(), weightKg: weight.input.value.trim(), impression: impression.value };
     const errors = validateReceiver(input);
@@ -114,10 +127,10 @@ export function renderProfile(view, { session, navigate }) {
       impressionError.hidden = false;
       return;
     }
-    // 서버에는 돌봄 대상 이름만 보냅니다(질문지·아이 맡기기가 대상을 찾는 데 필요). 시연 계정은 403이라 건너뜁니다.
+    // 돌봄 대상 UUID와 기본 정보를 서버에 함께 저장해 질문지와 연결합니다.
     button.disabled = true;
     try {
-      await saveRecipient(receiver.name);
+      await saveProfile({ receiver });
     } catch (error) {
       if (error.status !== 403) {
         button.disabled = false;
@@ -127,12 +140,12 @@ export function renderProfile(view, { session, navigate }) {
       }
     }
     button.disabled = false;
-    navigate(ONBOARDING_STEPS[1]);
+    navigate(onboardingDestination(query, ONBOARDING_STEPS[1]));
   });
 
   view.classList.add('onboarding');
   view.append(
-    topBar(1, store.isOnboarded() ? () => navigate('/g/home') : null),
+    topBar(1, editing ? () => navigate('/g/my') : store.isOnboarded() ? () => navigate('/g/home') : null),
     ...heading(['아이에 대해', '기본 정보를 알려주세요'], '종사자가 처음 만났을 때 알아볼 수 있게 해줘요'),
     name.node,
     h('div', { class: 'ob-field' }, h('span', { class: 'ob-label', text: '나이 · 성별' }),
@@ -146,7 +159,7 @@ export function renderProfile(view, { session, navigate }) {
   );
 }
 
-// 사진을 3:4 비율 안으로 줄여 JPEG 데이터로 바꿉니다. 이 기기 밖으로 보내지 않습니다.
+// 사진을 3:4 비율 안으로 줄여 Supabase에 저장할 JPEG 데이터로 바꿉니다.
 async function compressPhoto(file) {
   if (!PHOTO_TYPES.includes(file.type)) throw new Error('JPG, PNG, WEBP 사진만 올릴 수 있어요.');
   if (file.size > MAX_PHOTO_BYTES) throw new Error('사진은 10MB 이하로 올려 주세요.');
@@ -160,8 +173,14 @@ async function compressPhoto(file) {
   return canvas.toDataURL('image/jpeg', 0.82);
 }
 
-export function renderPhoto(view, { session, navigate }) {
+export async function renderPhoto(view, { session, navigate, query }) {
   const store = storeFor(session);
+  try {
+    const cloud = await getProfile();
+    if (cloud?.photo) store.savePhoto(cloud.photo);
+  } catch {
+    // 이 기기의 임시 사진을 사용합니다.
+  }
   let photo = store.loadPhoto();
   const fileInput = h('input', { type: 'file', accept: PHOTO_TYPES.join(','), class: 'visually-hidden', 'aria-label': '증명사진 파일 선택' });
   const message = h('p', { class: 'notice error', role: 'alert', hidden: true });
@@ -192,16 +211,25 @@ export function renderPhoto(view, { session, navigate }) {
   });
 
   const protect = ['평소 화면엔 캐릭터만 보여요', '미아가 생겼을 때만 센터에서 열람해요', '누가 언제 봤는지 기록이 남아요', '이용 기간이 끝나면 자동으로 닫혀요', 'AI에는 보내지 않아요'];
-  const next = h('button', { type: 'button', text: '등록하고 다음' });
-  next.addEventListener('click', () => {
+  const editing = query?.get('mode') === 'edit';
+  const next = h('button', { type: 'button', text: editing ? '사진 저장' : '등록하고 다음' });
+  next.addEventListener('click', async () => {
     if (!photo) { message.textContent = '사진을 올리거나 \'나중에 할게요\'를 눌러 주세요.'; message.hidden = false; return; }
     if (!store.savePhoto(photo)) { message.textContent = '이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.'; message.hidden = false; return; }
-    navigate(ONBOARDING_STEPS[2]);
+    next.disabled = true;
+    try {
+      await saveProfile({ photo });
+      navigate(onboardingDestination(query, ONBOARDING_STEPS[2]));
+    } catch (error) {
+      next.disabled = false;
+      message.textContent = error.message;
+      message.hidden = false;
+    }
   });
 
   view.classList.add('onboarding');
   view.append(
-    topBar(2, () => navigate(ONBOARDING_STEPS[0])),
+    topBar(2, () => navigate(editing ? '/g/my' : ONBOARDING_STEPS[0])),
     ...heading(['미아 방지용', '증명사진을 등록해요'], '정말 필요할 때만 센터에서 열어볼 수 있어요'),
     slot, fileInput, message,
     h('section', { class: 'card protect', 'aria-labelledby': 'protect-title' },
@@ -209,7 +237,7 @@ export function renderPhoto(view, { session, navigate }) {
       h('ul', {}, protect.map((text) => h('li', {}, h('span', { class: 'dot' }, icon('check', 12)), text)))),
     h('div', { class: 'ob-spacer' }),
     next,
-    h('button', { type: 'button', class: 'link', text: '나중에 할게요', onclick: () => navigate(ONBOARDING_STEPS[2]) }),
+    h('button', { type: 'button', class: 'link', text: editing ? '취소' : '나중에 할게요', onclick: () => navigate(onboardingDestination(query, ONBOARDING_STEPS[2])) }),
   );
 }
 
@@ -240,8 +268,15 @@ export async function characterUrl(colorId) {
   return canvas.toDataURL('image/png');
 }
 
-export async function renderAvatar(view, { session, navigate }) {
+export async function renderAvatar(view, { session, navigate, query }) {
   const store = storeFor(session);
+  try {
+    const cloud = await getProfile();
+    if (cloud?.receiver) store.save({ receiver: cloud.receiver });
+    if (cloud?.avatar) store.save({ avatar: cloud.avatar });
+  } catch {
+    // 이 기기의 임시 설정을 사용합니다.
+  }
   const stored = store.load().avatar;
   const avatar = validateAvatar(stored ?? {}) ? { ...stored, items: [...stored.items] } : defaultAvatar();
   const name = store.load().receiver?.name ?? '아이';
@@ -278,19 +313,29 @@ export async function renderAvatar(view, { session, navigate }) {
   }));
 
   const message = h('p', { class: 'notice error', role: 'alert', hidden: true });
-  const next = h('button', { type: 'button', text: '다음' });
-  next.addEventListener('click', () => {
-    if (!validateAvatar(avatar) || !store.save({ avatar }) || !store.complete()) {
+  const editing = query?.get('mode') === 'edit';
+  const next = h('button', { type: 'button', text: editing ? '저장' : '다음' });
+  next.addEventListener('click', async () => {
+    if (!validateAvatar(avatar) || !store.save({ avatar })) {
       message.textContent = '이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.';
       message.hidden = false;
       return;
     }
-    navigate(QUESTIONNAIRE_PATH);
+    next.disabled = true;
+    try {
+      await saveProfile({ avatar, completed: true });
+      store.complete();
+      navigate(onboardingDestination(query, QUESTIONNAIRE_PATH));
+    } catch (error) {
+      next.disabled = false;
+      message.textContent = error.message;
+      message.hidden = false;
+    }
   });
 
   view.classList.add('onboarding');
   view.append(
-    topBar(3, () => navigate(ONBOARDING_STEPS[1])),
+    topBar(3, () => navigate(editing ? '/g/my' : ONBOARDING_STEPS[1])),
     ...heading(['사진 대신', `캐릭터로 ${withObjectParticle(name)} 표현해요`], '평소 화면에는 이 캐릭터만 보여요'),
     h('div', { class: 'character-stage' }, picture),
     h('div', { class: 'ob-field' }, h('span', { class: 'ob-label', text: '체형' }), h('div', { class: 'pills', role: 'group', 'aria-label': '체형' }, bodyButtons)),

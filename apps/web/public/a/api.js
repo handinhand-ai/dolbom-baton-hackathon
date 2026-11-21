@@ -78,6 +78,30 @@ export async function saveRecipient(name) {
   throw new ApiError(body?.error ?? '돌봄 대상을 저장하지 못했어요.', { status });
 }
 
+export async function getProfile() {
+  const { ok, status, body } = await request('/api/auth/profile');
+  if (ok) return body.data;
+  throw new ApiError(body?.error ?? '프로필을 불러오지 못했어요.', { status });
+}
+
+export async function saveProfile(patch) {
+  const { ok, status, body } = await request('/api/auth/profile', { method: 'PUT', body: JSON.stringify(patch) });
+  if (ok) return body.data;
+  throw new ApiError(body?.error ?? '프로필을 저장하지 못했어요.', { status });
+}
+
+export async function getCareApplications() {
+  const { ok, status, body } = await request('/api/care/applications');
+  if (ok) return body.data;
+  throw new ApiError(body?.error ?? '보낸 기록을 불러오지 못했어요.', { status });
+}
+
+export async function getQuestionnaireAnswers() {
+  const { ok, status, body } = await request('/api/questionnaire/answers');
+  if (ok) return body.data;
+  throw new ApiError(body?.error ?? '질문지 답변을 불러오지 못했어요.', { status });
+}
+
 export async function listDemoAccounts() {
   const { ok, body } = await request('/api/auth/demo-accounts');
   return ok ? body.data : [];

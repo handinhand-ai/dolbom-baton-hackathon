@@ -9,6 +9,12 @@ import { screens } from './screens.js';
 const app = document.getElementById('app');
 let renderId = 0;
 
+try {
+  document.documentElement.classList.toggle('large-text', localStorage.getItem('baton.large-text.v1') === 'true');
+} catch {
+  // 저장소를 사용할 수 없어도 기본 글자 크기로 실행합니다.
+}
+
 function navigate(path) {
   const target = `#${path}`;
   if (location.hash === target) route();

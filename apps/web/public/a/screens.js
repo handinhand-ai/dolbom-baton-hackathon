@@ -4,10 +4,11 @@
 import { h } from './dom.js';
 import { renderLogin } from './login.js';
 import { renderSignup } from './signup.js';
-import { renderMyPage } from './my.js';
+import { renderActiveShares, renderMyPage, renderSentRecords } from './my.js';
 import { renderQuestionnaire } from '../b/questionnaire.js';
 import { characterUrl, renderAvatar, renderPhoto, renderProfile } from './onboarding-screens.js';
 import { createOnboardingStore } from './onboarding.js';
+import { getProfile } from './api.js';
 
 const CHARACTER = '/a/assets/minjun.png';
 
@@ -26,9 +27,20 @@ function placeholder(title, owner, note, link) {
 
 const D_SCREEN = { href: '/care', label: 'D 시연 화면 열기' };
 
-// 온보딩에서 입력한 정보(이 기기에 저장)가 있으면 그것을, 없으면 로그인 세션의 돌봄 대상 이름을 보여 줍니다.
+// Supabase 프로필을 우선 사용하고, 조회할 수 없으면 이 기기의 마지막 캐시를 보여 줍니다.
 async function guardianHome(view, { session }) {
-  const saved = createOnboardingStore(globalThis.localStorage, session.user_id).load();
+  const localStore = createOnboardingStore(globalThis.localStorage, session.user_id);
+  let saved = localStore.load();
+  try {
+    const cloud = await getProfile();
+    if (cloud) {
+      saved = { ...saved, receiver: cloud.receiver ?? saved.receiver, avatar: cloud.avatar ?? saved.avatar };
+      localStore.save(saved);
+      if (cloud.photo) localStore.savePhoto(cloud.photo);
+    }
+  } catch {
+    // 클라우드 조회 실패 시 이 기기의 마지막 캐시를 표시합니다.
+  }
   const receiver = saved.receiver;
   const name = receiver?.name ?? session.care_recipient?.name;
   const facts = receiver ? [`${receiver.age}세 ${receiver.sex}`, receiver.heightCm ? `${receiver.heightCm}cm` : null, receiver.weightKg ? `${receiver.weightKg}kg` : null].filter(Boolean).join(' · ') : null;
@@ -72,6 +84,8 @@ export const screens = new Map([
   ['/g/manual', renderQuestionnaire],
   ['/g/care', placeholder('아이 맡기기', 'D', '아이 맡기기 화면을 이 탭에 연결할 예정이에요.', D_SCREEN)],
   ['/g/my', renderMyPage],
+  ['/g/my/shares', renderActiveShares],
+  ['/g/my/sent', renderSentRecords],
   ['/c/home', caregiverHome],
   ['/c/manual', placeholder('설명서', 'B (한 장 카드)', '배정된 대상이 보내 준 설명서가 여기에 보여요.')],
   ['/c/records', placeholder('돌봄기록', 'C')],
