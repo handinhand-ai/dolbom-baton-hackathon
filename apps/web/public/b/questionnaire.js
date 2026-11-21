@@ -81,6 +81,36 @@ export async function renderQuestionnaire(view, { session, navigate }) {
     });
   }
 
+  function showPreview(savedToServer) {
+    const rows = questions.map((question) => {
+      const answer = answers.get(question.question_id);
+      const selected = (question.options || [])
+        .filter((option) => answer?.optionIds.has(option.option_id))
+        .map((option) => option.option_text);
+      const freeText = answer?.text?.trim();
+      const summary = [...selected, ...(freeText ? [freeText] : [])].join(' · ') || '미입력';
+      return h('section', { class: 'card' },
+        h('h2', { text: question.question_text }),
+        h('p', { class: 'muted', text: summary }));
+    });
+    view.replaceChildren(
+      h('p', { class: 'b-eyebrow', text: '돌봄 설명서 만들기' }),
+      h('h1', { tabindex: '-1', text: '아이의 돌봄 정보 미리보기' }),
+      h('p', {
+        class: savedToServer ? 'notice info' : 'notice',
+        role: 'status',
+        text: savedToServer
+          ? '서버에 답변을 저장했습니다. 아래에서 내용을 확인하고 다음 화면으로 진행하세요.'
+          : '화면 시연용 미리보기입니다. 현재 입력은 서버에 저장되지 않았으며 다른 계정에 공유되지 않습니다.',
+      }),
+      ...rows,
+      h('button', { type: 'button', text: '아이 맡기기 화면으로', onclick: () => navigate('/g/care/new') }),
+      h('button', { type: 'button', class: 'secondary', text: '홈으로', onclick: () => navigate('/g/home') }),
+      h('button', { type: 'button', class: 'link', text: '답변 수정하기', onclick: render }),
+    );
+    view.querySelector('h1')?.focus();
+  }
+
   function render() {
     const question = questions[index];
     const answer = answerFor(answers, question.question_id);
@@ -139,15 +169,7 @@ export async function renderQuestionnaire(view, { session, navigate }) {
         next.textContent = '저장 중…';
         try {
           await finish();
-          view.replaceChildren(
-            h('p', { class: 'b-eyebrow', text: '돌봄 설명서 만들기' }),
-            h('h1', { tabindex: '-1', text: '답변을 저장했어요' }),
-            h('div', { class: 'card b-complete' },
-              h('p', { class: 'strong', text: `${session.care_recipient?.name ?? '아이'}의 답변이 안전하게 저장됐어요.` }),
-              h('p', { class: 'muted', text: '다시 들어오면 저장한 답변을 이어서 확인할 수 있어요.' })),
-            h('button', { type: 'button', text: '홈으로', onclick: () => navigate('/g/home') }),
-          );
-          view.querySelector('h1')?.focus();
+          showPreview(true);
         } catch (error) {
           next.disabled = false;
           next.textContent = '답변 저장';
@@ -181,6 +203,12 @@ export async function renderQuestionnaire(view, { session, navigate }) {
           h('span', { text: '더 알려 줄 게 있다면 (선택)' }), detail),
         message),
       h('div', { class: 'b-actions' }, back, next),
+      ...(index === questions.length - 1 ? [h('button', {
+        type: 'button',
+        class: 'secondary',
+        text: '저장 없이 화면 흐름 계속',
+        onclick: () => showPreview(false),
+      })] : []),
     );
   }
 
