@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>아이 맡기기 | 돌봄 바통</title>
+    <link rel="stylesheet" href="/care.css">
+    <script src="/care.js" defer></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <strong class="logo">돌봄바통</strong>
+        <label class="demo-switch">
+          <span>시연 계정</span>
+          <select id="demo-user" aria-label="시연 계정 선택"></select>
+        </label>
+      </header>
+      <p class="demo-note">시연용 화면입니다. 센터·종사자·돌봄 대상은 모두 합성 데이터이며 실제 기관 접수나 자동 배정이 아닙니다.</p>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+      <main id="view" aria-live="polite"></main>
+    </div>
+  </body>
+</html>
