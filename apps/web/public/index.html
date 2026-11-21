@@ -3,57 +3,16 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>아이에 대해 알려주세요 | 돌봄 바통</title>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-    <link rel="stylesheet" href="/styles.css">
-    <script src="/app.js" defer></script>
+    <title>돌봄바통</title>
+    <meta name="theme-color" content="#3f63f3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/a/manifest.json">
+    <link rel="stylesheet" href="/a/a.css">
+    <link rel="stylesheet" href="/b/questionnaire.css">
+    <link rel="stylesheet" href="/a/figma-features.css">
+    <script type="module" src="/a/shell.js"></script>
   </head>
   <body>
-    <main class="app-shell">
-      <section class="questionnaire" aria-labelledby="question-title">
-        <header class="topbar">
-          <button id="back-button" class="icon-button" type="button" aria-label="이전 질문">‹</button>
-          <button id="skip-button" class="skip-button" type="button">건너뛰기</button>
-        </header>
-
-        <div class="heading">
-          <p class="eyebrow">돌봄 설명서 만들기</p>
-          <h1 id="question-title">아이에 대해 알려주세요</h1>
-          <p>몰라도 괜찮아요. 가까운 걸 골라 주세요.</p>
-        </div>
-
-        <div id="progress" class="progress" aria-label="질문 진행률"></div>
-        <p id="question-count" class="question-count" aria-live="polite"></p>
-
-        <div id="loading" class="state-card" role="status">
-          <span class="spinner" aria-hidden="true"></span>
-          질문을 불러오고 있어요.
-        </div>
-        <div id="error" class="state-card error-card" role="alert" hidden>
-          <strong>질문을 불러오지 못했어요.</strong>
-          <span id="error-detail"></span>
-          <button id="retry-button" class="secondary-button" type="button">다시 시도</button>
-        </div>
-
-        <form id="question-form" hidden>
-          <div class="question-copy">
-            <span id="required-badge" class="required-badge" hidden>필수</span>
-            <h2 id="current-question"></h2>
-            <p id="question-helper"></p>
-          </div>
-          <div id="option-groups" class="option-groups"></div>
-          <label class="detail-field">
-            <span>더 알려 줄 게 있다면 <small>(선택)</small></span>
-            <textarea id="answer-detail" rows="3" placeholder="직접 입력해 주세요"></textarea>
-          </label>
-          <p id="validation-message" class="validation-message" role="alert"></p>
-        </form>
-
-        <footer class="actions">
-          <button id="next-button" class="primary-button" type="button" disabled>다음</button>
-          <p>답변은 로그인 연동 전까지 이 화면에만 임시 보관됩니다.</p>
-        </footer>
-      </section>
-    </main>
+    <div id="app"><p class="muted loading">불러오는 중…</p></div>
   </body>
 </html>
