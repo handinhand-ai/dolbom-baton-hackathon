@@ -6,8 +6,8 @@
   "type": "module",
   "engines": { "node": ">=22" },
   "scripts": {
-    "dev": "node --watch apps/api/src/index.mjs",
-    "start": "node apps/api/src/index.mjs",
+    "dev": "node --env-file-if-exists=.env --watch apps/api/src/index.mjs",
+    "start": "node --env-file-if-exists=.env apps/api/src/index.mjs",
     "check": "node scripts/check.mjs",
     "test": "node --test"
   }

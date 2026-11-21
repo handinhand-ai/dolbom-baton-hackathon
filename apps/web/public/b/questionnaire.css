@@ -1,0 +1,26 @@
+.b-questionnaire { background: linear-gradient(160deg, #f8faff 0%, #edf1ff 100%); }
+.b-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.b-eyebrow { margin: 0; color: var(--primary); font-size: 14px; font-weight: 700; }
+button.b-skip { width: auto; min-height: 44px; margin: 0; padding: 4px 8px; }
+.b-progress { display: flex; gap: 5px; margin-top: 24px; }
+.b-progress span { flex: 1; height: 4px; border-radius: 999px; background: #d7dded; }
+.b-progress span.active { background: var(--primary); }
+.b-count { margin: 8px 0 0; color: var(--muted); font-size: 13px; text-align: right; }
+.b-question { margin-top: 20px; }
+.b-question h2 { margin-top: 8px; }
+.b-required { display: inline-flex; padding: 3px 10px; border-radius: 999px; color: var(--danger); background: var(--danger-soft); font-size: 13px; font-weight: 700; }
+.b-option-groups { display: grid; gap: 20px; margin-top: 22px; }
+.b-option-groups fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.b-option-groups legend { margin-bottom: 10px; font-size: 14px; font-weight: 700; }
+.b-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.b-choice { position: relative; display: grid; place-items: center; min-height: 56px; margin: 0; padding: 10px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 15px; text-align: center; }
+.b-choice input { position: absolute; width: 1px; min-height: 1px; padding: 0; opacity: 0; pointer-events: none; }
+.b-choice:has(input:checked) { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); color: var(--primary-ink); background: #f8f9ff; }
+.b-detail { margin-top: 24px; }
+.b-detail > span { display: block; margin-bottom: 8px; font-size: 14px; }
+.b-detail textarea { width: 100%; resize: vertical; padding: 14px; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 16px; }
+.b-detail textarea:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(63, 99, 243, .2); }
+.b-validation { min-height: 22px; margin: 8px 0 0; color: var(--danger); font-size: 14px; }
+.b-actions { display: grid; grid-template-columns: .7fr 1.3fr; gap: 10px; }
+.b-state { padding: 72px 12px; color: var(--muted); text-align: center; }
+.b-complete { text-align: center; }

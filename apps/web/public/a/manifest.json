@@ -1,0 +1,18 @@
+{
+  "name": "돌봄바통",
+  "short_name": "돌봄바통",
+  "description": "AI 돌봄 인수인계",
+  "start_url": "/a/#/g/home",
+  "scope": "/a/",
+  "display": "standalone",
+  "background_color": "#f7f9fd",
+  "theme_color": "#3f63f3",
+  "icons": [
+    {
+      "src": "/a/assets/minjun.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

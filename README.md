@@ -22,6 +22,27 @@ npm run dev
 
 브라우저에서 `http://127.0.0.1:3000`에 접속합니다. 종료는 `Ctrl+C`입니다.
 
+## 인증·세션 API (A)
+
+시연 계정 로그인·로그아웃, 로그인 상태 조회, 역할 확인 API(`/api/auth/*`)를 제공합니다. 세션은 HttpOnly 쿠키이고 저장소는 서버 메모리입니다. 경로·요청·응답 예시와 역할별 반환값은 [`docs/auth-api.md`](docs/auth-api.md)에서 확인합니다.
+
+### 공통 화면 틀 (A)
+
+`npm run dev` 후 <http://127.0.0.1:3000/a/>에서 로그인 → 역할별 시작 화면 → 하단 탭 틀을 확인합니다. UI 레퍼런스 v0.3(색·글자·버튼·알약 탭)과 Pretendard Variable(SIL OFL, `apps/web/public/a/fonts/`)을 적용했습니다. 시연 계정은 `guardian`, `caregiver`, `center`(비밀번호 `demo-1234`)이며 로그인 화면에서 역할을 고르면 채워집니다.
+
+신규 회원가입과 보호자 온보딩 정보를 Supabase에 저장하려면 SQL Editor에서 `docs/supabase-demo-account.sql`을 먼저 실행합니다. 계정은 `dolbom_demo.app_user`, 아이 기본 정보·프로필 이미지·캐릭터는 `dolbom_demo.user_profile`에 저장됩니다.
+
+보호자 마이페이지는 저장된 아이 프로필, 현재 공유 중인 신청, 보낸 기록을 표시합니다. 글자 확대, JSON 기록 백업, 홈 화면 추가, 역할 변경과 로그아웃을 지원합니다.
+
+- 라우트: 보호자 `/g/home·manual·care·my`, 돌봄 선생님 `/c/home·manual·records·my`, 센터 관리자 `/c/center-admin`. 로그인하지 않았거나 역할이 다르면 `/login`·자기 홈으로 이동합니다(`access.js`).
+- B·C·D는 `apps/web/public/a/screens.js`에서 자기 경로 한 줄만 교체해 화면을 끼웁니다. 아직 없는 화면은 자리표시 카드로 보입니다.
+- 재사용: `a.css`(디자인 토큰·버튼·카드·탭), `icons.js`(선 아이콘), `access.js`(역할별 탭·접근 규칙), `api.js`(`getSession()` 등), `assets/minjun.png`(시연 캐릭터).
+- 한계: 아이 맡기기·돌봄기록은 자리표시이고, D의 시연 화면(`/care`)은 아직 탭에 연결하지 않았습니다.
+
+## 보호자 질문지 (B)
+
+보호자로 로그인한 뒤 설명서 탭에서 Supabase의 활성 질문과 선택지를 불러옵니다. 답변은 로그인 세션의 `care_recipient_id`로 저장하며 재진입 시 복구합니다. 질문 조회와 답변 API, 데모용 DB 정책의 범위는 [`docs/questionnaire-api.md`](docs/questionnaire-api.md)에서 확인합니다.
+
 ## 검증
 
 ```powershell
