@@ -71,6 +71,7 @@ export const screens = new Map([
   ['/g/my/sent', renderSentRecords],
   ['/c/home', renderCaregiverHome],
   ['/c/manual', renderCManual],
+  ['/c/agent', renderCManual],
   ['/c/records', renderCRecord],
   ['/c/my', renderMyPage],
   ['/c/center-admin', renderCenterAdmin],
