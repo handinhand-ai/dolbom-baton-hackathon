@@ -20,7 +20,7 @@ npm run db:reset-local
 npm run dev
 ```
 
-브라우저에서 http://localhost:3000 을 엽니다. 키가 없으면 화면 위쪽 노란 띠에 **시연 모드**가 표시됩니다. 운영 빌드로 확인하려면 `npm run build` 다음 `npm start`를 실행합니다.
+브라우저에서 http://localhost:3001 을 엽니다(저장소 루트의 `npm run dev`는 3000을 쓰므로 둘을 함께 실행할 수 있습니다). 키가 없으면 화면 위쪽 노란 띠에 **시연 모드**가 표시됩니다. 운영 빌드로 확인하려면 `npm run build` 다음 `npm start`를 실행합니다.
 
 | 구성 | 키가 있을 때 | 키가 없을 때 (시연 모드) |
 |---|---|---|

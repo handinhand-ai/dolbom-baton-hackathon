@@ -22,6 +22,15 @@ npm run dev
 
 브라우저에서 `http://127.0.0.1:3000`에 접속합니다. 종료는 `Ctrl+C`입니다.
 
+### 실행 구성
+
+| 위치 | 기술 | 실행 명령 | 주소 |
+| --- | --- | --- | --- |
+| `apps/web/public` | HTML + CSS + Vanilla JavaScript (`apps/api`의 Node 서버가 제공) | 저장소 루트에서 `npm run dev` | `http://127.0.0.1:3000` |
+| `apps/care-guide` | Next.js 16 + React 19 + TypeScript | `apps/care-guide`에서 별도 실행(`npm install` 후 `npm run dev`) | `http://localhost:3001` |
+
+두 앱은 서로 의존하지 않으며 포트가 달라 동시에 실행할 수 있습니다. 루트의 `npm run check`·`npm test`는 `apps/care-guide`를 검사하지 않고, `apps/care-guide`는 그 폴더에서 `npm run typecheck`·`npm test`로 검증합니다. 루트의 Vercel 설정(`vercel.json`)은 `apps/web/public`만 배포하며 `apps/care-guide`는 포함하지 않습니다.
+
 ## 인증·세션 API (A)
 
 시연 계정 로그인·로그아웃, 로그인 상태 조회, 역할 확인 API(`/api/auth/*`)를 제공합니다. 세션은 HttpOnly 쿠키이고 저장소는 서버 메모리입니다. 경로·요청·응답 예시와 역할별 반환값은 [`docs/auth-api.md`](docs/auth-api.md)에서 확인합니다.

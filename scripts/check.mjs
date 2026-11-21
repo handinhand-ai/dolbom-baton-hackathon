@@ -9,8 +9,10 @@ let count = 0;
 async function checkDirectory(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
-    if (entry.isDirectory() && ['node_modules', 'dist'].includes(entry.name)) continue;
+    if (entry.isDirectory() && ['node_modules', 'dist', '.next'].includes(entry.name)) continue;
     const target = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory);
+    // apps/care-guide(Next.js)는 자기 도구(타입 검사·테스트)로 따로 검사합니다. 루트 검사에는 넣지 않습니다.
+    if (entry.isDirectory() && target.pathname.endsWith('/apps/care-guide/')) continue;
     if (entry.isDirectory()) {
       await checkDirectory(target);
     } else if (/\.(mjs|js)$/.test(entry.name)) {
