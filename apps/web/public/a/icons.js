@@ -7,6 +7,9 @@ const PATHS = {
   building: 'M5.5 21V4h9v17 M14.5 9h4v12 M3.5 21h17 M8.5 8h2 M8.5 12h2 M8.5 16h2',
   heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
   check: 'M6 12.5l4 4 8-9',
+  back: 'M15 5l-7 7 7 7',
+  camera: 'M4 8h3l1.5-2h7L17 8h3v11H4z M12 16.5a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z',
+  lock: 'M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
 };
 
 export function icon(name, size = 24) {

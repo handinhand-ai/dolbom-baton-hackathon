@@ -1,5 +1,6 @@
 // 기능 A 진입점: 해시 라우터 + 로그인·역할 확인 + 역할별 하단 탭 틀.
-import { HOME, TABS, parseHash, resolveRoute } from './access.js';
+import { HOME, TABS, isOnboardingPath, parseHash, resolveOnboarding, resolveRoute } from './access.js';
+import { createOnboardingStore } from './onboarding.js';
 import { getSession } from './api.js';
 import { h } from './dom.js';
 import { icon } from './icons.js';
@@ -41,7 +42,15 @@ async function route() {
     return;
   }
 
-  const hasTabs = Boolean(session && TABS[session.role].length);
+  // 회원가입을 막 마친 보호자는 온보딩을 끝내기 전에는 어느 화면으로 가도 온보딩 첫 화면으로 보냅니다.
+  const signupPending = session?.role === 'guardian' && createOnboardingStore(globalThis.localStorage, session.user_id).isSignupPending();
+  const onboarding = resolveOnboarding(session, path, signupPending);
+  if (onboarding) {
+    location.replace(`#${onboarding.to}`);
+    return;
+  }
+
+  const hasTabs = Boolean(session && TABS[session.role].length) && !isOnboardingPath(path);
   const view = h('main', { id: 'view', class: hasTabs ? 'with-tabs' : '' });
   const render = screens.get(path) ?? screens.get(HOME[session?.role]);
   try {
@@ -52,7 +61,7 @@ async function route() {
   if (id !== renderId) return;
 
   document.title = `${view.querySelector('h1')?.textContent ?? '돌봄바통'} | 돌봄바통`;
-  app.replaceChildren(view, ...(session ? [tabBar(session, path)] : []).filter(Boolean));
+  app.replaceChildren(view, ...(hasTabs ? [tabBar(session, path)] : []).filter(Boolean));
   view.querySelector('h1')?.focus();
 }
 

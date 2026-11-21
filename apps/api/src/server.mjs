@@ -79,7 +79,7 @@ async function loadQuestionnaire({ fetchImpl, supabaseUrl, supabaseAnonKey }) {
 
 export function createApp({
   careStore = createCareStore(),
-  authStore = createAuthStore({ getUser: careStore.getUser }),
+  authStore = createAuthStore({ getUser: careStore.getUser, registerUser: careStore.registerUser, listCenters: careStore.listCenters }),
   fetchImpl = fetch,
   supabaseUrl = process.env.SUPABASE_URL ?? '',
   supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
@@ -88,7 +88,7 @@ export function createApp({
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
-    response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'none'");
+    response.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'");
 
     let url;
     try {

@@ -45,6 +45,39 @@ export async function logout() {
   await request('/api/auth/logout', { method: 'POST' });
 }
 
+// 필드별 오류(field)와 상태 코드(status)를 함께 전달하는 오류입니다.
+export class ApiError extends Error {
+  constructor(message, { status = 0, field = null } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.field = field;
+  }
+}
+
+// 회원가입: 성공하면 바로 로그인된 세션을 돌려줍니다. 입력 오류(400)·이미 가입(409)은 서버 메시지와 field를 담아 던집니다.
+export async function signup(payload) {
+  const { ok, status, body } = await request('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) });
+  if (ok) return body.data;
+  if ([400, 409].includes(status) && body?.error) throw new ApiError(body.error, { status, field: body.field ?? null });
+  if (status === 429) throw new ApiError('시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.', { status });
+  if (status === 503) throw new ApiError('지금은 회원가입을 받지 않아요.', { status });
+  throw new ApiError('회원가입하지 못했습니다. 잠시 후 다시 시도해 주세요.', { status });
+}
+
+// 소속 센터 목록(D의 /api/care/centers). 돌봄 선생님 회원가입에서 고릅니다.
+export async function listCenters() {
+  const { ok, body } = await request('/api/care/centers');
+  return ok ? body.data : [];
+}
+
+// 보호자의 돌봄 대상 이름을 서버에 저장합니다(온보딩 1/4). 시연 계정은 403이라 호출 쪽에서 건너뜁니다.
+export async function saveRecipient(name) {
+  const { ok, status, body } = await request('/api/auth/recipient', { method: 'POST', body: JSON.stringify({ name }) });
+  if (ok) return body.data;
+  throw new ApiError(body?.error ?? '돌봄 대상을 저장하지 못했어요.', { status });
+}
+
 export async function listDemoAccounts() {
   const { ok, body } = await request('/api/auth/demo-accounts');
   return ok ? body.data : [];
